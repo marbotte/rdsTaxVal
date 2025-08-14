@@ -1,0 +1,80 @@
+---
+title: "rdsTaxVal"
+format: 
+  gfm:
+    df_print: kable
+---
+
+```{r setup}
+require(knitr)
+```
+
+
+## sourcing the function (development phase)
+
+```{r}
+
+lapply(dir("R"),function(x)source(paste("R",x,sep="/")))
+
+```
+
+
+## Reading the files 
+
+```{r}
+rdsBST<-readRDS("../data_google/4.rdsProyectos/dataRedBSTCol.rds")
+rdsTDF<-readRDS("../data_google/4.rdsProyectos/dataTDF.rds")
+```
+
+## Creating the oneTable objects
+
+
+```{r}
+taxoBST <- new_taxo_oneTab(rdsBST$taxonomy)
+taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", epithet="sp_epithet")
+```
+
+## Manage spaces in the taxonomy table
+
+```{r}
+suggested_spaces_BST<-checkSpace(taxoBST)
+kable(suggested_spaces_BST)
+taxoBST<-correctSpace(taxoBST,suggested_spaces_BST)
+```
+
+
+```{r}
+suggested_spaces_TDF<-checkSpace(taxoTDF)
+kable(suggested_spaces_TDF)
+taxoTDF<-correctSpace(taxoTDF,suggested_spaces_TDF)
+```
+
+## Manage undetermined taxa
+
+```{r}
+suggested_undetermined_BST<-checkUndetermited(taxoBST)
+kable(head(suggested_undetermined_BST))
+taxoBST<-correctUndetermined(taxoBST,suggested_undetermined_BST)
+```
+
+```{r}
+suggested_undetermined_TDF<-checkUndetermited(taxoTDF)
+kable(head(suggested_undetermined_TDF))
+taxoTDF<-correctUndetermined(taxoTDF,suggested_undetermined_TDF)
+```
+
+
+## Structural problems
+### Are genera always in the same family
+
+```{r}
+suggested_unicity_familyBST<-unicityGnInFam(taxoBST)
+kable(head(suggested_unicity_familyBST))
+#correctUndetermined(taxoBST,suggested_unicity_familyBST)
+```
+
+```{r}
+suggested_unicity_familyTDF<-unicityGnInFam(taxoTDF)
+kable(head(suggested_unicity_familyTDF))
+```
+
