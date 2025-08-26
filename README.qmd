@@ -31,7 +31,12 @@ rdsTDF<-readRDS("../data_google/4.rdsProyectos/dataTDF.rds")
 
 ```{r}
 taxoBST <- new_taxo_oneTab(rdsBST$taxonomy)
-taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", species_epithet="sp_epithet")
+taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", taxonRanks_names = c(family="family", genus="genus",species="sp_epithet"), taxonRanks_epithetized = c("sp_epithet"))
+
+taxoBST[arrayInd(which(as.matrix(taxoBST) %in% c("","N/D","NA","N/A")), .dim=dim(taxoBST), useNames = T)] <- NA
+taxoTDF[arrayInd(which(as.matrix(taxoTDF) %in% c("","N/D","NA","N/A")), .dim=dim(taxoTDF), useNames = T)] <- NA
+
+
 ```
 
 ## Manage spaces in the taxonomy table
@@ -39,14 +44,14 @@ taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", species_epithet="sp_epit
 ```{r}
 suggested_spaces_BST<-checkSpace(taxoBST)
 kable(suggested_spaces_BST)
-taxoBST<-correctSpace(taxoBST,suggested_spaces_BST)
+taxoBST<-correct(taxoBST,suggested_spaces_BST)
 ```
 
 
 ```{r}
 suggested_spaces_TDF<-checkSpace(taxoTDF)
 kable(suggested_spaces_TDF)
-taxoTDF<-correctSpace(taxoTDF,suggested_spaces_TDF)
+taxoTDF<-correct(taxoTDF,suggested_spaces_TDF)
 ```
 
 ## Manage undetermined taxa

@@ -30,7 +30,7 @@
 # cf_aff="identificationQualifier"
 # sp_specif="verbatimTaxonRank"
 
-new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRanks_names = c(family = "family", genus = "genus", species = "specificEpithet", infraspecies = "infraspecificEpithet"), taxonRanks_epithesized=c("specificEpithet", "infraspecificEpithet"), taxoCode="code", plot="plot", morphoQualifiers=c(cf_aff = "identificationQualifier", sp_specif = "verbatimTaxonRank"), comments="comments")
+new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRanks_names = c(family = "family", genus = "genus", species = "specificEpithet", infraspecies = "infraspecificEpithet"), taxonRanks_epithetized=c("specificEpithet", "infraspecificEpithet"), taxoCode="code", plot="plot", morphoQualifiers=c(cf_aff = "identificationQualifier", sp_specif = "verbatimTaxonRank"), comments="comments")
 {
   currentFormat <- match.arg(currentFormat)
   if(currentFormat == "listPlot")
@@ -52,13 +52,14 @@ new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRan
     oneTab <- obj
   }
   # clean function parameters in function of object colnames
-  taxonRanks_names <- taxonRanks_names[taxonRanks_names %in% colnames(obj)]
-  epithesized <- epithesized [taxonRanks_epithetized %in% taxon_ranks]
-  morphoQualifiers <- morphoQualifiers [morphoQualifiers %in% colnames(obj)]
+  taxonRanks_names <- taxonRanks_names[taxonRanks_names %in% colnames(oneTab)]
+  taxonRanks_epithetized <- taxonRanks_epithetized [taxonRanks_epithetized %in% taxonRanks_names]
+  morphoQualifiers <- morphoQualifiers [morphoQualifiers %in% colnames(oneTab)]
   # Checking whether minimal information is in the table
   #stopifnot(family %in% colnames(oneTab))
-  stopifnot(length(taxon_ranks) >= 1)
-  stopifnot(all(names(taxon_ranks) %in% taxonRanks_epithetized))
+  stopifnot(length(taxonRanks_names) >= 1)
+  stopifnot(!all(taxonRanks_names %in% taxonRanks_epithetized))
+  stopifnot(taxonRanks_epithetized %in% taxonRanks_names)
   #stopifnot(genus %in% colnames(oneTab))
   #stopifnot(species_epithet %in% colnames(oneTab))
   #stopifnot(taxoCode %in% colnames(oneTab))
@@ -67,19 +68,19 @@ new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRan
   separ<-strsplit(taxize::rank_ref$ranks,",")
   taxize_rank_ref<-data.frame(rankid=rep(as.integer(taxize::rank_ref$rankid),sapply(separ,length)),
                               rankname=unlist(separ))
-  taxize_rank_ref<-taxize_rank_ref[1:which(taxize_rank_ref=="form"),]
+  taxize_rank_ref<-taxize_rank_ref[1:which(taxize_rank_ref$rankname=="form"),]
   stopifnot(names(taxonRanks_names) %in% taxize_rank_ref$rankname)
   taxonRanks<-data.frame(
     rank=names(taxonRanks_names),
     column=taxonRanks_names,
-    taxize_rankid=taxize_rank_ref$rankid[match(names(taxonRanks_names,taxize_rank_ref$rankname))]
+    taxize_rankid=taxize_rank_ref$rankid[match(names(taxonRanks_names),taxize_rank_ref$rankname)]
   )
-  taxonRanks_epithetized=taxonRanks$column %in% taxonRanks_epithetized
+  taxonRanks$epithetized <- taxonRanks$column %in% taxonRanks_epithetized
   taxonRanks<-taxonRanks[order(taxonRanks$taxize_rankid)]
   rownames(taxonRanks)<-NULL
-  if(!comments %in% colnames(obj)){comments<-NA}
-  if(!plot %in% colnames(obj)){plot<-NA}
-  if(!taxoCode %in% colnames(obj)){taxoCode<-NA}
+  if(!comments %in% colnames(oneTab)){comments<-NA}
+  if(!plot %in% colnames(oneTab)){plot<-NA}
+  if(!taxoCode %in% colnames(oneTab)){taxoCode<-NA}
   # Give the object its attributes
   oneTab<-structure(oneTab,
             origin=currentFormat,
@@ -92,18 +93,22 @@ new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRan
   return(oneTab)
 }
 
-extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers"),onlyRanks=NULL,onlyQualifiers=NULL)
+extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers","comments"),onlyRanks=NULL,onlyQualifiers=NULL)
 {
   stopifnot(is(taxo,"taxo_oneTab"))
-  parts=match.arg(parts,choices=c("plot","taxoCode","taxonRanks","morphoQualifiers"),several.ok = T)
+  parts=match.arg(parts,choices=c("plot","taxoCode","taxonRanks","morphoQualifiers","comments"),several.ok = T)
   colToGet<-data.frame(gp=character(),cn=character())
   if("plot" %in% parts)
   {
-    colToGet<-rbind(colToGet,data.frame(gp="plot",col=attr(taxo,"plot")))
+    colToGet<-rbind(colToGet,data.frame(gp="plot",cn=attr(taxo,"plot")))
+  }
+  if("comments" %in% parts)
+  {
+    colToGet<-rbind(colToGet,data.frame(gp="comments",cn=attr(taxo,"comments")))
   }
   if("taxoCode" %in% parts)
   {
-    colToGet<-rbind(colToGet,data.frame(gp="taxoCode",col=attr(taxo,"taxoCode")))
+    colToGet<-rbind(colToGet,data.frame(gp="taxoCode",cn=attr(taxo,"taxoCode")))
   }
   if("taxonRanks" %in% parts)
   {
@@ -112,7 +117,7 @@ extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers
       stopifnot(onlyRanks %in% attr(taxo,"taxonRanks")$rank)
       colToGet<-rbind(colToGet,data.frame(gp="taxonRanks",cn=attr(taxo,"taxonRanks")$column[match(onlyRanks,attr(taxo,"taxonRanks")$rank)]))
     }else{
-      colToGet<-rbind(colToGet,data.frame(gp="taxonRanks",attr(taxo,"taxonRanks")$column))
+      colToGet<-rbind(colToGet,data.frame(gp="taxonRanks",cn=attr(taxo,"taxonRanks")$column))
     }
   }
   if("morphoQualifier" %in% parts)
@@ -131,44 +136,46 @@ extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers
 }
 
 
-checkSpace <- function(taxo,show_space="#")
+checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
 {
   stopifnot(is(taxo,"taxo_oneTab"))
-  mat<-as.matrix(taxo[na.omit(unlist(attributes(taxo)[c("family","genus","species_epithet","taxoCode","plot","infraspecies_epithet","cf_aff","sp_specif")]))])
+
+  mat<-as.matrix(extract(taxo,parts))
   m_col<-match(colnames(mat),colnames(taxo))
   w_space_start <- which(`dim<-`(grepl("^[[:space:]]+",mat),dim(mat)),arr.ind=T)
   w_space_end <- which(`dim<-`(grepl("[[:space:]]+$",mat),dim(mat)),arr.ind=T)
   w_space_multi <- which(`dim<-`(grepl("[[:space:]]{2,}",mat),dim(mat)),arr.ind=T)
   numCases<-nrow(w_space_start)+nrow(w_space_end)+nrow(w_space_multi)
-  tabReport<-data.frame(
-    id_suggest=seq(1,numCases,length.out=numCases),
-    Reduce(rbind,list(w_space_start,w_space_end,w_space_multi)),
-    type=c(rep("start",nrow(w_space_start)),rep("end",nrow(w_space_end)),rep("multi",nrow(w_space_multi))),
-    field=colnames(mat)[c(w_space_start[,"col"],w_space_end[,"col"],w_space_multi[,"col"])],
-    taxoCode=mat[c(w_space_start[,"row"],w_space_end[,"row"],w_space_multi[,"row"]),attr(taxo,"taxoCode")],
-    plot=mat[c(w_space_start[,"row"],w_space_end[,"row"],w_space_multi[,"row"]),attr(taxo,"plot")],
-    problem=c(mat[w_space_start],mat[w_space_end],mat[w_space_multi]),
-    show_space=gsub("[[:space:]]",show_space,c(mat[w_space_start],mat[w_space_end],mat[w_space_multi])),
-    suggested=gsub("[[:space:]]{2,}"," ",gsub("[[:space:]]+$","",gsub("^[[:space:]]+","",c(mat[w_space_start],mat[w_space_end],mat[w_space_multi])))),
-    row.names=NULL)
-  tabReport$col<-m_col[tabReport$col]
-  colnames(tabReport)[c(6,7)]<-c(attr(taxo,"taxoCode"),attr(taxo,"plot"))
-  return(tabReport)
+  concernedCol<-unique(c(w_space_start[,"col"],w_space_end[,"col"],w_space_multi[,"col"]))
+  concernedRow<-unique(c(w_space_start[,"row"],w_space_end[,"row"],w_space_multi[,"row"]))
+  types<-data.frame(Reduce(rbind,list(w_space_start,w_space_end,w_space_multi)),
+  type=c(rep("start",nrow(w_space_start)),rep("end",nrow(w_space_end)),rep("multi",nrow(w_space_multi))))
+  stopifnot(show_ref %in% colnames(taxo))
+  references <- taxo[concernedRow,show_ref]
+  colnames(references)<-paste("ref",show_ref,sep="_")
+  suggested<-as.data.frame(gsub("[[:space:]]{2,}"," ",gsub("[[:space:]]+$","",gsub("^[[:space:]]+","",mat[concernedRow,concernedCol,drop=F]))))
+  colnames(suggested)<-paste("suggest",colnames(suggested),sep="_")
+  return(data.frame(id_suggest=seq(1,length(concernedRow),length.out=length(concernedRow)),
+             row=concernedRow,
+             references,
+             as.data.frame(gsub("[[:space:]]",show_space,mat[concernedRow,concernedCol,drop=F])),
+             suggested
+             ))
 }
 
-correctSpace<-function(taxo,suggested)
-{
-  if(nrow(suggested)>0){
-    taxo[as.matrix(suggested[c("row","col")])]<-suggested$suggested
-  }
-  return(taxo)
-}
+# correctSpace<-function(taxo,suggested)
+# {
+#   if(nrow(suggested)>0){
+#     taxo[as.matrix(suggested[c("row","col")])]<-suggested$suggested
+#   }
+#   return(taxo)
+# }
 
 checkUndetermited <- function(taxo, correct = F)
 # Note: when there are cases of Indet or Morpho, species code should be checked for relevant information
 {
   stopifnot(is(taxo,"taxo_oneTab"))
-  mat<-as.matrix(taxo[na.omit(unlist(attributes(taxo)[c("family","genus","species_epithet","infraspecies_epithet")]))])
+  mat<-as.matrix(extract(taxo,"taxonRanks"))
   #if(is.na(attr(taxo,"infraspecies_epithet"))) {mat<-cbind(mat, infraspecificEpithet = rep(NA,nrow(mat)))}
   w_Indet <- which(`dim<-`(grepl("^[Ii]ndet",mat),dim(mat)),arr.ind=T)
   w_empty <- which(`dim<-`(grepl("^$",mat),dim(mat)),arr.ind=T)
@@ -223,18 +230,18 @@ checkUndetermited <- function(taxo, correct = F)
   cf_affMat[w_aff] <- gsub("^aff\\. ?(.*)$","aff. \\1",mat[w_aff])
   suggested_cf_aff<-trimws(apply(cf_affMat,1,paste,sep=" ",collapse=" "))
 
-  if(!is.na(attr(taxo,"cf_aff")))
+  if("cf_aff" %in% names(attr(taxo,"morphoQualifiers")))
   {
-    raw_cf_aff<-taxo[attr(taxo,"cf_aff")]
+    raw_cf_aff<-taxo[attr(taxo,"morphoQualifiers")["cf_aff"]]
     raw_cf_aff[grepl("^[[:space:]]*$",raw_cf_aff)]<-NA
     suggested_cf_aff[suggested_cf_aff==""]<-raw_cf_aff[suggested_cf_aff==""]
   }else{
     suggested_cf_aff[suggested_cf_aff==""]<-NA
   }
 
-  if(!is.na(attr(taxo,"sp_specif")))
+  if("sp_specif" %in% names(attr(taxo,"morphoQualifiers")))
   {
-    raw_sp_specif<-taxo[attr(taxo,"sp_specif")]
+    raw_sp_specif<-taxo[attr(taxo,"morphoQualifiers")["sp_specif"]]
     raw_sp_specif[grepl("^[[:space:]]*$",raw_sp_specif)]<-NA
     suggested_sp_specif[suggested_sp_specif==""]<-raw_sp_specif[suggested_sp_specif==""]
   }else{
@@ -242,44 +249,47 @@ checkUndetermited <- function(taxo, correct = F)
   }
 
   anyPb<-sort(unique(c(w_Indet[,"row"], w_empty[,"row"], w_cf[,"row"], w_aff[,"row"], w_sp[,"row"], w_spNb[,"row"], w_morfo[,"row"])))
-  tabRaw<-taxo[na.omit(unlist(attributes(taxo)[c("plot","taxoCode","family","genus","species_epithet","infraspecies_epithet","cf_aff","sp_specif")]))]
+  tabRaw<-extract(taxo,c("plot","taxoCode","taxonRanks","morphoQualifiers"))
   tabSuggest<-as.data.frame(mat2)
   if(any(!is.na(suggested_cf_aff)))
   {
-    tabSuggest[[ifelse(is.na(attr(taxo,"cf_aff")),"identificationQualifier",attr(taxo,"cf_aff"))]] <- suggested_cf_aff
+    name_cf_aff<-ifelse("cf_aff" %in% names(attr(taxo,"morphoQualifiers")),attr(taxo,"morphoQualifiers")["cf_aff"],"identificationQualifier")
+    tabSuggest[[name_cf_aff]] <- suggested_cf_aff
   }
   if(any(!is.na(suggested_sp_specif)))
   {
-    tabSuggest[[ifelse(is.na(attr(taxo,"sp_specif")),"verbatimTaxonRank",attr(taxo,"sp_specif"))]] <- suggested_sp_specif
+    name_sp_specif<-ifelse("sp_specif" %in% names(attr(taxo,"morphoQualifiers")),attr(taxo,"morphoQualifiers")["sp_specif"],"verbatimTaxonRank")
+    tabSuggest[[name_sp_specif]] <- suggested_sp_specif
   }
   colnames(tabSuggest)<-paste0("suggest_",colnames(tabSuggest))
   return(data.frame(id_suggest=seq(1,length(anyPb),length.out=length(anyPb)),row=anyPb,tabRaw[anyPb,],tabSuggest[anyPb,]))
 }
 
-correctUndetermined <- function(taxo, suggested)
-{
-  stopifnot(is(taxo,"taxo_oneTab"))
-  cn <- colnames(suggested)[grep("suggest_",colnames(suggested))]
-  resCol<-gsub("suggest_","",cn)
-  colToAdd<-resCol[!resCol%in%colnames(taxo)]
-  if(length(colToAdd)>0){
-    taxo[colToAdd]<-NA
-    if(any(colToAdd=="identificationQualifier")&is.na(attr(taxo,"cf_aff")))
-    {attr(taxo,"cf_aff")<-"identificationQualifier"}
-    if(any(colToAdd=="verbatimTaxonRank"&is.na(attr(taxo,"sp_specif"))))
-    {attr(taxo,"sp_specif")<-"verbatimTaxonRank"}
-    }
-  w_suggested<-as.matrix(cbind(row=as.numeric(row(suggested[,cn])),col=as.numeric(col(suggested[,cn]))))
-  w_taxo <- cbind(row=suggested$row[w_suggested[,"row"]],col=match(resCol,colnames(taxo))[w_suggested[,"col"]])
-  taxo[w_taxo]<-suggested[,cn][w_suggested]
-  return(taxo)
-}
+# correctUndetermined <- function(taxo, suggested)
+# {
+#   stopifnot(is(taxo,"taxo_oneTab"))
+#   cn <- colnames(suggested)[grep("suggest_",colnames(suggested))]
+#   resCol<-gsub("suggest_","",cn)
+#   colToAdd<-resCol[!resCol%in%colnames(taxo)]
+#   if(length(colToAdd)>0){
+#     taxo[colToAdd]<-NA
+#     if(any(colToAdd=="identificationQualifier")&is.na(attr(taxo,"cf_aff")))
+#     {attr(taxo,"cf_aff")<-"identificationQualifier"}
+#     if(any(colToAdd=="verbatimTaxonRank"&is.na(attr(taxo,"sp_specif"))))
+#     {attr(taxo,"sp_specif")<-"verbatimTaxonRank"}
+#     }
+#   w_suggested<-as.matrix(cbind(row=as.numeric(row(suggested[,cn])),col=as.numeric(col(suggested[,cn]))))
+#   w_taxo <- cbind(row=suggested$row[w_suggested[,"row"]],col=match(resCol,colnames(taxo))[w_suggested[,"col"]])
+#   taxo[w_taxo]<-suggested[,cn][w_suggested]
+#   return(taxo)
+# }
 
 
 checkUnicityGnInFam <- function(taxo,simplified=F)
 {
   stopifnot(is(taxo,"taxo_oneTab"))
-  gnFamTab<-data.frame(row=1:nrow(taxo),taxo[c(attr(taxo,"plot"),attr(taxo,"taxoCode"),attr(taxo,"family"),attr(taxo,"genus"))])
+  stopifnot(c("genus","family") %in% attr(taxo, "taxonRanks")$rank)
+  gnFamTab<-data.frame(row=1:nrow(taxo),extract(taxo,c("plot","taxoCode","taxonRanks"),onlyRanks = c("family","genus")))
   gnFamTab<-gnFamTab[!is.na(gnFamTab[,attr(taxo,"genus")]),]
   gnInFam<-tapply(as.character(gnFamTab[[attr(taxo,"family")]]),as.character(gnFamTab[[attr(taxo,"genus")]]),function(x)sort(table(x),decreasing = T),simplify=F)
   if(any(sapply(gnInFam,length)!=1))
