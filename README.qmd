@@ -31,7 +31,7 @@ rdsTDF<-readRDS("../data_google/4.rdsProyectos/dataTDF.rds")
 
 ```{r}
 taxoBST <- new_taxo_oneTab(rdsBST$taxonomy)
-taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", epithet="sp_epithet")
+taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", species_epithet="sp_epithet")
 ```
 
 ## Manage spaces in the taxonomy table
@@ -68,13 +68,17 @@ taxoTDF<-correctUndetermined(taxoTDF,suggested_undetermined_TDF)
 ### Are genera always in the same family
 
 ```{r}
-suggested_unicity_familyBST<-unicityGnInFam(taxoBST)
+suggested_unicity_familyBST<-checkUnicityGnInFam(taxoBST)
 kable(head(suggested_unicity_familyBST))
 #correctUndetermined(taxoBST,suggested_unicity_familyBST)
+taxoBST<-correctUnicityGnInFam(taxoBST, suggested_unicity_familyBST)
 ```
 
 ```{r}
-suggested_unicity_familyTDF<-unicityGnInFam(taxoTDF)
+suggested_unicity_familyTDF<-checkUnicityGnInFam(taxoTDF)
 kable(head(suggested_unicity_familyTDF))
+taxoTDF<- correctUnicityGnInFam(taxoTDF,suggested_unicity_familyTDF)
 ```
+
+### Are taxonomic codes always associated with the same information
 
