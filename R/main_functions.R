@@ -8,7 +8,7 @@
 #' @param obj the base object with the taxonomy, may be a list with taxonomy
 #' data.frame for each plot, or a single data.frame
 #' @param currentFormat describe the format of obj: "listPlot" for a list of
-#' plots and "oneTable" for a single
+#' plots and "oneTable" for a single data.frame containing all the taxonomy
 #' @param taxoCode name of the column code corresponding to code of the taxon
 #' @param taxonRanks_names named character vector (names:rank as defined in taxize, content name of the column)
 #' @param taxonRanks_epithetized names of the columns (as in taxonRanks_names) which correspond to epithets

@@ -5,6 +5,11 @@ format:
     df_print: kable
 ---
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/marbotte/rdsTaxVal/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/marbotte/rdsTaxVal/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
+
 ```{r setup}
 require(knitr)
 ```

@@ -1,38 +1,30 @@
 # rdsTaxVal
 
 
+<!-- badges: start -->
+
+[![R-CMD-check](https://github.com/marbotte/rdsTaxVal/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/marbotte/rdsTaxVal/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 ``` r
 require(knitr)
 ```
 
     Loading required package: knitr
 
-## sourcing the function (development phase)
+## Installing the package
+
+You may install the `rdsTaxVal` package with the following command:
 
 ``` r
-lapply(dir("R"),function(x)source(paste("R",x,sep="/")))
+devtools::install_github("marbotte/rdsTaxVal")
 ```
 
-    [[1]]
-    [[1]]$value
-    function () 
-    {
-        print("Hello, world!")
-    }
+## Loading the package
 
-    [[1]]$visible
-    [1] FALSE
-
-
-    [[2]]
-    [[2]]$value
-    function (obj) 
-    {
-        NA
-    }
-
-    [[2]]$visible
-    [1] FALSE
+``` r
+library(rdsTaxVal)
+```
 
 ## Reading the files
 
