@@ -70,6 +70,11 @@ new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRan
   if(!comments %in% colnames(oneTab)){comments<-NA}
   if(!plot %in% colnames(oneTab)){plot<-NA}
   if(!taxoCode %in% colnames(oneTab)){taxoCode<-NA}
+  #parameterized columns: no factor!
+  parameterized<-na.omit(c(taxonRanks$column,taxoCode,plot,morphoQualifiers,comments))
+  fac_par<-sapply(oneTab[parameterized],is.factor)
+  if(any(fac_par))
+    {oneTab[parameterized][fac_par]<-as.data.frame(lapply(oneTab[parameterized][fac_par],as.character))}
   # Give the object its attributes
   oneTab<-structure(oneTab,
             origin=currentFormat,
