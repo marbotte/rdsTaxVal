@@ -790,6 +790,7 @@ checkGbif<-function(taxo,rankCheck,higherRankCheck=higherRanks(taxo,rankCheck),m
                                extract(taxo,c("taxoCode","plot","taxonRanks"),onlyRanks = rankSuggests)[rankOk,],
     suggestedTax[match(split(as.matrix(tabRanks),row(as.matrix(tabRanks))), split(as.matrix(unTabRanks),row(as.matrix(unTabRanks)))),]
   ,row.names=NULL)
+  # TODO: write warnings depending on excludeFromSuggest
   suggested<-suggestedAllRows[!suggestedAllRows$type%in%excludeFromSuggests,]
   res<-list()
   if(returnGbifRes)
@@ -813,6 +814,8 @@ checkGbif<-function(taxo,rankCheck,higherRankCheck=higherRanks(taxo,rankCheck),m
   res$suggested<-suggested
   return(res)
 }
+
+# TODO: create function to show failed, etc from previous function
 
 #' Suppress suggested corrections from a suggested correction table
 #'
