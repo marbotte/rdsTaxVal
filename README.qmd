@@ -24,6 +24,7 @@ lapply(dir("R"),function(x)source(paste("R",x,sep="/")))
 ```{r}
 rdsBST<-readRDS("../data_google/4.rdsProyectos/dataRedBSTCol.rds")
 rdsTDF<-readRDS("../data_google/4.rdsProyectos/dataTDF.rds")
+rdsTDF$taxonomy$family<-as.character(rdsTDF$taxonomy$family)
 ```
 
 ## Creating the oneTable objects
@@ -59,13 +60,13 @@ taxoTDF<-correct(taxoTDF,suggested_spaces_TDF)
 ```{r}
 suggested_undetermined_BST<-checkUndetermited(taxoBST)
 kable(head(suggested_undetermined_BST))
-taxoBST<-correctUndetermined(taxoBST,suggested_undetermined_BST)
+taxoBST<-correct(taxoBST,suggested_undetermined_BST)
 ```
 
 ```{r}
 suggested_undetermined_TDF<-checkUndetermited(taxoTDF)
 kable(head(suggested_undetermined_TDF))
-taxoTDF<-correctUndetermined(taxoTDF,suggested_undetermined_TDF)
+taxoTDF<-correct(taxoTDF,suggested_undetermined_TDF)
 ```
 
 
@@ -73,17 +74,30 @@ taxoTDF<-correctUndetermined(taxoTDF,suggested_undetermined_TDF)
 ### Are genera always in the same family
 
 ```{r}
-suggested_unicity_familyBST<-checkUnicityGnInFam(taxoBST)
+suggested_unicity_familyBST<-checkUnicityRankSup(taxoBST, rank = "genus", superior="family")
 kable(head(suggested_unicity_familyBST))
 #correctUndetermined(taxoBST,suggested_unicity_familyBST)
-taxoBST<-correctUnicityGnInFam(taxoBST, suggested_unicity_familyBST)
+taxoBST<-correct(taxoBST, suggested_unicity_familyBST)
 ```
 
 ```{r}
-suggested_unicity_familyTDF<-checkUnicityGnInFam(taxoTDF)
+suggested_unicity_familyTDF<-checkUnicityRankSup(taxoTDF, rank="genus",superior="family")
 kable(head(suggested_unicity_familyTDF))
-taxoTDF<- correctUnicityGnInFam(taxoTDF,suggested_unicity_familyTDF)
+taxoTDF<- correct(taxoTDF,suggested_unicity_familyTDF)
 ```
 
 ### Are taxonomic codes always associated with the same information
+
+```{r}
+suggested_taxoCodeBST <- checkUnicityCodetax(taxoBST,"takeFirst")
+kable(head(showUnicityCodetax(suggested_taxoCodeBST,"suggested")))
+taxoBST<-correct(taxoBST, suggested_taxoCodeBST)
+```
+
+```{r}
+suggested_taxoCodeTDF <- checkUnicityCodetax(taxoTDF,"takeFirst")
+kable(head(showUnicityCodetax(suggested_taxoCodeTDF,"suggested")))
+taxoTDF<-correct(taxoTDF, suggested_taxoCodeTDF)
+```
+
 

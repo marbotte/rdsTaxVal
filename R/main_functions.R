@@ -18,18 +18,6 @@
 #! @param cf_aff name of the column containing the cf. or aff. expression
 #! @param sp_specif name of the column containg information about the morphospecies
 
-
-# obj=rdsBST$taxonomy
-# currentFormat="listPlot"
-# family="family"
-# genus="genus"
-# species_epithet="specificEpithet"
-# infraspecies_epithet="infraspecificEpithet"
-# taxoCode="code"
-# plot="plot"
-# cf_aff="identificationQualifier"
-# sp_specif="verbatimTaxonRank"
-
 new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRanks_names = c(family = "family", genus = "genus", species = "specificEpithet", infraspecies = "infraspecificEpithet"), taxonRanks_epithetized=c("specificEpithet", "infraspecificEpithet"), taxoCode="code", plot="plot", morphoQualifiers=c(cf_aff = "identificationQualifier", sp_specif = "verbatimTaxonRank"), comments="comments")
 {
   currentFormat <- match.arg(currentFormat)
@@ -76,7 +64,7 @@ new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRan
     taxize_rankid=taxize_rank_ref$rankid[match(names(taxonRanks_names),taxize_rank_ref$rankname)]
   )
   taxonRanks$epithetized <- taxonRanks$column %in% taxonRanks_epithetized
-  taxonRanks<-taxonRanks[order(taxonRanks$taxize_rankid)]
+  taxonRanks<-taxonRanks[order(taxonRanks$taxize_rankid),]
   rownames(taxonRanks)<-NULL
   if(!comments %in% colnames(oneTab)){comments<-NA}
   if(!plot %in% colnames(oneTab)){plot<-NA}
@@ -135,6 +123,86 @@ extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers
   return(taxo[colToGet$cn])
 }
 
+getRank <- function(taxo, rank)
+{
+  stopifnot(is(taxo,"taxo_oneTab"))
+  ATTR_TR <- attr(taxo, "taxonRanks")
+  stopifnot(rank %in% ATTR_TR$rank)
+  epi <- ATTR_TR[ATTR_TR$rank==rank,"epithetized"]
+  if(!epi)
+  {return(as.character(taxo[,ATTR_TR$column[ATTR_TR$rank==rank],drop=T]))}
+  if(rank=="species") {otherRanks<-"genus"} else {otherRanks<-c("genus", "species")}
+  tab <- extract(taxo,parts="taxonRanks",onlyRanks = c(otherRanks,rank))
+  res <- do.call(paste, tab)
+  res[unique(which(is.na(tab),arr.ind=T)[,"row"])]<-NA
+  return(as.character(res))
+}
+
+correct<-function(taxo, suggested)
+{
+  stopifnot(is(taxo,"taxo_oneTab"))
+  if(!is(suggested,"data.frame"))
+  {
+    if("suggested" %in% names(suggested)) { suggested <- suggested$suggested }
+  }
+  if(!nrow(suggested)) { return(taxo) }
+  stopifnot("row" %in% colnames(suggested) & any(grepl("suggest",colnames(suggested))))
+  if("col" %in% colnames(suggested)) { type= "cell" } else { type <- "row" }
+  if(type=="row")
+  {
+    colsToChange<-gsub("suggest_","",colnames(suggested)[grepl("suggest_",colnames(suggested))])
+    colsToAdd<-colsToChange[!colsToChange%in%colnames(taxo)]
+    separ<-strsplit(taxize::rank_ref$ranks,",")
+    taxize_rank_ref<-data.frame(rankid=rep(as.integer(taxize::rank_ref$rankid),sapply(separ,length)),
+                                rankname=unlist(separ))
+    taxize_rank_ref <- taxize_rank_ref[1:which(taxize_rank_ref$rankname=="form"),]
+    match_mat <- cbind(match(colsToAdd, taxize_rank_ref$rankname), match(colsToAdd, gsub(" ", "_", taxize_rank_ref$rankname)), match(colsToAdd, gsub("[[:space:]]","_",paste0(taxize_rank_ref$rankname,"epithet",sep="_"))))
+    taxizeMatch_m <- apply(match_mat, 1, function(x)
+      {
+        res=na.omit(x)
+        if(length(res)==0){res<-NA}
+        return(res)
+      })
+    if(any(!is.na(taxizeMatch_m)))
+    {
+      add<-data.frame(rank = taxize_rank_ref$rankname[na.omit(taxizeMatch_m)],
+                      column = colsToAdd[!is.na(taxizeMatch_m)],
+                      taxize_rankid = taxize_rank_ref$rankid[na.omit(taxizeMatch_m)],
+                      epithetized=grepl("epithet",colsToAdd[!is.na(taxizeMatch_m)]))
+      stopifnot(!add$taxize_rankid %in% attr(taxo,"taxonRanks")$taxize_rankid)
+      attr(taxo,"taxonRanks") <- rbind(attr(taxo,"taxonRanks"), add)
+      attr(taxo, "taxonRanks") <- attr(taxo, "taxonRanks")[order(taxize_rankid),]
+    }
+    if(any(colsToAdd=="identificationQualifier"))
+    {
+      stopifnot(!"cf_aff" %in% names(attr(taxo,"morphoQualifiers")))
+      attr(taxo,"morphoQualifiers")<-c(attr(taxo,"morphoQualifiers"),cf_aff="identificationQualifier")
+    }
+    if(any(colsToAdd=="verbatimTaxonRanks"))
+    {
+      stopifnot(!"sp_specif" %in% names(attr(taxo,"morphoQualifiers")))
+      attr(taxo,"morphoQualifiers")<-c(attr(taxo,"morphoQualifiers"),sp_specif="verbatimTaxonRanks")
+    }
+    if(any(colsToAdd == "comments"))
+    {
+      stopifnot(is.na(attr(taxo, "comments")))
+      attr(taxo, "comments") <- "comments"
+    }
+    if(any(colsToAdd == "plot"))
+    {
+      stopifnot(is.na(attr(taxo, "plot")))
+      attr(taxo, "plot") <- "plot"
+    }
+    if(any(colsToAdd == "taxoCode"))
+    {
+      stopifnot(is.na(attr(taxo, "taxoCode")))
+      attr(taxo, "taxoCode") <- "taxoCode"
+    }
+    taxo[colsToAdd]<-NA
+    taxo[suggested$row,colsToChange]<-suggested[,paste("suggest",colsToChange,sep="_")]
+    return(taxo)
+  }
+}
 
 checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
 {
@@ -154,24 +222,23 @@ checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQuali
   references <- taxo[concernedRow,show_ref]
   colnames(references)<-paste("ref",show_ref,sep="_")
   suggested<-as.data.frame(gsub("[[:space:]]{2,}"," ",gsub("[[:space:]]+$","",gsub("^[[:space:]]+","",mat[concernedRow,concernedCol,drop=F]))))
-  colnames(suggested)<-paste("suggest",colnames(suggested),sep="_")
-  return(data.frame(id_suggest=seq(1,length(concernedRow),length.out=length(concernedRow)),
+  if(length(concernedRow))
+  {colnames(suggested)<-paste("suggest",colnames(suggested),sep="_")}
+  res<-data.frame(id_suggest=seq(1,length(concernedRow),length.out=length(concernedRow)),
              row=concernedRow,
-             references,
-             as.data.frame(gsub("[[:space:]]",show_space,mat[concernedRow,concernedCol,drop=F])),
-             suggested
-             ))
+             references
+             )
+  if(length(concernedRow))
+  {
+    res<-cbind(res,
+              as.data.frame(gsub("[[:space:]]",show_space,mat[concernedRow,concernedCol,drop=F])),
+              suggested
+               )
+  }
+  return(res)
 }
 
-# correctSpace<-function(taxo,suggested)
-# {
-#   if(nrow(suggested)>0){
-#     taxo[as.matrix(suggested[c("row","col")])]<-suggested$suggested
-#   }
-#   return(taxo)
-# }
-
-checkUndetermited <- function(taxo, correct = F)
+checkUndetermited <- function(taxo)
 # Note: when there are cases of Indet or Morpho, species code should be checked for relevant information
 {
   stopifnot(is(taxo,"taxo_oneTab"))
@@ -265,87 +332,41 @@ checkUndetermited <- function(taxo, correct = F)
   return(data.frame(id_suggest=seq(1,length(anyPb),length.out=length(anyPb)),row=anyPb,tabRaw[anyPb,],tabSuggest[anyPb,]))
 }
 
-# correctUndetermined <- function(taxo, suggested)
-# {
-#   stopifnot(is(taxo,"taxo_oneTab"))
-#   cn <- colnames(suggested)[grep("suggest_",colnames(suggested))]
-#   resCol<-gsub("suggest_","",cn)
-#   colToAdd<-resCol[!resCol%in%colnames(taxo)]
-#   if(length(colToAdd)>0){
-#     taxo[colToAdd]<-NA
-#     if(any(colToAdd=="identificationQualifier")&is.na(attr(taxo,"cf_aff")))
-#     {attr(taxo,"cf_aff")<-"identificationQualifier"}
-#     if(any(colToAdd=="verbatimTaxonRank"&is.na(attr(taxo,"sp_specif"))))
-#     {attr(taxo,"sp_specif")<-"verbatimTaxonRank"}
-#     }
-#   w_suggested<-as.matrix(cbind(row=as.numeric(row(suggested[,cn])),col=as.numeric(col(suggested[,cn]))))
-#   w_taxo <- cbind(row=suggested$row[w_suggested[,"row"]],col=match(resCol,colnames(taxo))[w_suggested[,"col"]])
-#   taxo[w_taxo]<-suggested[,cn][w_suggested]
-#   return(taxo)
-# }
 
-
-checkUnicityGnInFam <- function(taxo,simplified=F)
+checkUnicityRankSup <- function(taxo,rank="genus",superior="family")
 {
   stopifnot(is(taxo,"taxo_oneTab"))
-  stopifnot(c("genus","family") %in% attr(taxo, "taxonRanks")$rank)
-  gnFamTab<-data.frame(row=1:nrow(taxo),extract(taxo,c("plot","taxoCode","taxonRanks"),onlyRanks = c("family","genus")))
-  gnFamTab<-gnFamTab[!is.na(gnFamTab[,attr(taxo,"genus")]),]
-  gnInFam<-tapply(as.character(gnFamTab[[attr(taxo,"family")]]),as.character(gnFamTab[[attr(taxo,"genus")]]),function(x)sort(table(x),decreasing = T),simplify=F)
-  if(any(sapply(gnInFam,length)!=1))
-  {
-    listProblems<-lapply(gnInFam[sapply(gnInFam,length)!=1],function(x)names(x[2:length(x)]))
-    listSolutions<-lapply(gnInFam[sapply(gnInFam,length)!=1],function(x)names(x[1]))
-    suggested_generic<-data.frame(genus=rep(names(listProblems),sapply(listProblems,length)),
-                         family=unlist(listProblems),
-                         suggested=rep(unlist(listSolutions),sapply(listProblems,length)))
-    matGnFam<-as.matrix(gnFamTab[c(attr(taxo,"family"),attr(taxo,"genus"))])
-    matSuggested_GnFam<-as.matrix(suggested_generic[c("family","genus")])
-    m <- match(split(matGnFam,row(matGnFam)),split(matSuggested_GnFam,row(matSuggested_GnFam)))
-    suggested <- data.frame(
-      id_suggest=seq(1,sum(!is.na(m)),length.out=sum(!is.na(m))),
-      row=gnFamTab$row[!is.na(m)],
-      plot=gnFamTab[[attr(taxo,"plot")]][!is.na(m)],
-      taxoCode=gnFamTab[[attr(taxo,"taxoCode")]][!is.na(m)],
-      genus=suggested_generic$genus[m[!is.na(m)]],
-      family=suggested_generic$family[m[!is.na(m)]],
-      suggest_family=suggested_generic$suggested[m[!is.na(m)]]
-    )
-  }else{
-    suggested_generic<-data.frame(genus=NULL,family=NULL,suggested=NULL)
-    suggested<-data.frame(id_suggest=numeric(0),row=numeric(0),plot=character(0),taxoCode=character(0),genus=character(0),family=character(0),suggest_family=character(0))
-  }
-  colnames(suggested)[colnames(suggested)=="genus"]<-attr(taxo,"genus")
-  colnames(suggested)[colnames(suggested)=="family"]<-attr(taxo,"family")
-  colnames(suggested)[colnames(suggested)=="plot"]<-attr(taxo,"plot")
-  colnames(suggested)[colnames(suggested)=="taxoCode"]<-attr(taxo,"taxoCode")
-  colnames(suggested)[colnames(suggested)=="suggest_family"]<-paste("suggest",attr(taxo,"family"),sep="_")
-  if(simplified)
-  {return(suggested_generic)}
-  return(suggested)
+  ATTR_TR<-attr(taxo,"taxonRanks")
+  stopifnot(c(rank,superior) %in% ATTR_TR$rank)
+  stopifnot(ATTR_TR$taxize_rankid[ATTR_TR$rank==rank]>ATTR_TR$taxize_rankid[ATTR_TR$rank==superior])
+  TAB<-data.frame(row=1:nrow(taxo),superior=getRank(taxo,superior), rank=getRank(taxo,rank))
+  TAB<-TAB[!is.na(TAB$rank),]
+  majority<-tapply(TAB$superior,TAB$rank,function(x)names(sort(table(x),decreasing=T))[1])
+  m<-match(TAB$rank,names(majority))
+  rowConcerned<-TAB$row[TAB$superior!=majority[m]]
+  suggest<-data.frame(suggest=majority[m][TAB$superior!=majority[m]])
+  colnames(suggest)<-paste("suggest",ATTR_TR$column[ATTR_TR$rank==superior],sep="_")
+  return(data.frame(id_suggest=seq(1,length(rowConcerned),length.out=length(rowConcerned)),
+                  row=rowConcerned,
+                  extract(taxo,parts=c("plot","taxoCode","taxonRanks"),onlyRanks=c(rank,superior))[rowConcerned,],
+                  suggest
+    ))
 }
 
-correctUnicityGnInFam <- function(taxo, suggested)
-{
-  if(nrow(suggested)>0)
-  {
-    taxo[suggested$row,attr(taxo,"family")]<-suggested[,paste("suggest",attr(taxo,"family"),sep="_")]
-  }
-  return(taxo)
-}
 
 checkUnicityCodetax <- function(taxo, noMajority=c("skip","takeFirst","stop"))
 {
   stopifnot(is(taxo,"taxo_oneTab"))
   noMajority<-match.arg(noMajority)
-  mat<-as.matrix(taxo[na.omit(unlist(attributes(taxo)[c("family","genus","species_epithet","infraspecies_epithet","cf_aff","sp_specif")]))])
+  mat<-as.matrix(extract(taxo,c("taxonRanks","morphoQualifiers")))
   corres<-match(split(mat,row(mat)),split(mat,row(mat)))
   corresByCode<-tapply(corres,taxo[[attr(taxo,"taxoCode")]],unique,simplify=F)
   ln_corresByCode<-sapply(corresByCode,length)
+  variablesToShow<-colnames(extract(taxo,c("plot","taxoCode","taxonRanks","morphoQualifiers")))
+  varSuggest<-colnames(extract(taxo,c("taxonRanks","morphoQualifiers")))
   if(any(ln_corresByCode!=1)){
-    nbCasesByCode <- tapply(corres,taxo[[attr(taxo,"taxoCode")]], table)
+    nbCasesByCode <- tapply(corres,extract(taxo,"taxoCode")[,1,drop=T], table)
     orderedCases <- lapply(nbCasesByCode[sapply(nbCasesByCode, length) > 1], sort, decreasing=T)
-    variablesToShow<-na.omit(unlist(attributes(taxo)[c("plot","taxoCode","family","genus","species_epithet","infraspecies_epithet","cf_aff","sp_specif")]))
     problems<-lapply(names(orderedCases),function(n,t,c,o,m){
       res<-data.frame(
         row=which(t[,attr(t,"taxoCode")]==n),
@@ -375,7 +396,6 @@ checkUnicityCodetax <- function(taxo, noMajority=c("skip","takeFirst","stop"))
     {
       stop("These codes corresponds to different information, but we were unable to find the most represented set of variables:\n", paste(names(orderedCases)[noMaj],collapse=" "))
     }
-    varSuggest<-na.omit(unlist(attributes(taxo)[c("family","genus","species_epithet","infraspecies_epithet","cf_aff","sp_specif")]))
     suggested<-Reduce(rbind,lapply(problems[!(noMaj&noMajority=="skip")],function(pb,vs){
       tab1<-pb[!pb$suggestedCase,,drop=F]
       row2<-unique(pb[pb$suggestedCase,vs,drop=F])
@@ -383,9 +403,10 @@ checkUnicityCodetax <- function(taxo, noMajority=c("skip","takeFirst","stop"))
       colnames(row2)<-paste("suggest",colnames(row2),sep="_")
       return(cbind(tab1,row2))
     },vs=varSuggest))
+    suggested<-data.frame(id_suggest=seq(1,nrow(suggested),length.out=nrow(suggested)),suggested[names(suggested)!="suggestedCase"])
   return(list(problems=problems,suggested=suggested))
   }
-  cn<-c("row",na.omit(unlist(attributes(taxo)[c("plot","taxoCode","family","genus","species_epithet","infraspecies_epithet","cf_aff","sp_specif")])),paste("suggest",na.omit(unlist(attributes(taxo)[c("family","genus","species_epithet","infraspecies_epithet","cf_aff","sp_specif")])),sep="_"))
+  cn<-c("row",variablesToShow,paste("suggest",varSuggest,sep="_"))
   names(cn)<-cn
   return(list(problems=NULL,suggested=as.data.frame(lapply(cn,function(x){return(NULL)}))))
 }
@@ -409,83 +430,15 @@ showUnicityCodetax<-function(resUnicityCodeTax,type=c("code","problems","suggest
     }}
 }
 
-correct<-function(taxo, suggested)
+
+
+analyseGbifTable <- function(searched, tabGbif,rank, obligatory, expected, returnGbifRes=T)
 {
-  stopifnot(is(taxo,"taxo_oneTab"))
-  if(!is(suggested,"data.frame"))
-  {
-    if("suggested" %in% names(suggested)) { suggested <- suggested$suggested }
-  }
-  stopifnot("row" %in% colnames(suggested) & any(grepl("suggest",colnames(suggested))))
-  if("col" %in% colnames(suggested)) { type= "cell" } else { type <- "row" }
-  if(type=="row")
-  {
-    colsToChange<-gsub("suggest_","",colnames(suggested)[grepl("suggest_",colnames(suggested))])
-    colsToAdd<-colsToChange[!colsToChange%in%colnames(taxo)]
-    if("infraspecificEpithet" %in% colsToAdd & is.na(attr(taxo,"infraspecies_epithet")))
-    {
-      taxo$infraspecificEpithet<-NA
-      attr(taxo,"infraspecies_epithet")<-"infraspecificEpithet"
-    }
-    if(any(colsToAdd=="identificationQualifier")&is.na(attr(taxo,"cf_aff")))
-    {
-      taxo$identificationQualifier<-NA
-      attr(taxo,"cf_aff")<-"identificationQualifier"
-    }
-    if(any(colsToAdd=="verbatimTaxonRank"&is.na(attr(taxo,"sp_specif"))))
-    {
-      taxo$verbatimTaxonRank<-NA
-      attr(taxo,"sp_specif")<-"verbatimTaxonRank"
-    }
-    taxo[suggested$row,colsToChange]<-suggested[,paste("suggest",colsToChange,sep="_")]
-    return(taxo)
-  }
-}
-
-# n<-which(speciesToSearch == "Termilia amazonica")
-# n<-which(speciesToSearch == "Aristolochia rigens")
-# n<-which(speciesToSearch == "Protium guianense")
-# n<-which(speciesToSearch == "Phanera guianensis")
-# searched <- speciesToSearch[n]
-# tabGbif <- resGbifSpe[[n]]
-# rank <- "species"
-# obligatory <- c(kingdom = "Plantae")
-# #obligatory <- c(kingdom = "Plantae", phylum = "Tracheophyta")
-# expected <- c(family = familySpecies[n])
-# reference <- searched
-# toCompare <- tabGbif$canonicalname
-
-# naSuppressed <- function(reference, toCompare)
-# {
-#   sepChar <- strsplit(reference,"")[[1]]
-#   sepCharToCompare <- strsplit(toCompare,"")
-#   sapply(sepCharToCompare, function(x, y)
-#     {
-#       if(length(x)-2 != length(y)) {return(F)}
-#       comparison <- y==x
-#       if(!comparison[1]) {return(F)}
-#       return(
-#         sum(!comparison)==2 & (which(!comparison)[2]==(which(!comparison)[1] -1)) & grepl("^[Nn]a$",paste(y[!comparison],collapse=""))
-#       )
-#     }
-#     , y=sepChar)
-# }
-
-
-# searched=speciesToSearch[i]
-# tabGbif = resGbifSpe[[i]]
-# expected=c(family=familySpecies[i])
-# rank="species"
-# obligatory = c(kingdom="Plantae")
-# returnGbifRes=T
-# orderedRanks=c("domain","superkingdom","kingdom","subkingdom","infrakingdom","superphylum","phylum","division","subphylum","subdivision","infradivision","superclass","class","subclass","infraclass","subterclass","parvclass","megacohort","supercohort","cohort","subcohort","infracohort","superorder","order","suborder","infraorder","parvorder","superfamily","family","subfamily","supertribe","tribe","subtribe","genus","subgenus","section","subsection","species group","series","species subgroup","species","infraspecies","subspecies","forma specialis","variety","varietas","subvariety","race","stirp","form","forma","morph","subform")
-
-
-
-analyseGbifTable <- function(searched, tabGbif,rank, obligatory, expected, returnGbifRes=T,
-                             orderedRanks=c("domain","superkingdom","kingdom","subkingdom","infrakingdom","superphylum","phylum","division","subphylum","subdivision","infradivision","superclass","class","subclass","infraclass","subterclass","parvclass","megacohort","supercohort","cohort","subcohort","infracohort","superorder","order","suborder","infraorder","parvorder","superfamily","family","subfamily","supertribe","tribe","subtribe","genus","subgenus","section","subsection","species group","series","species subgroup","species","infraspecies","subspecies","forma specialis","variety","varietas","subvariety","race","stirp","form","forma","morph","subform")
-                             )
-{
+  separ<-strsplit(taxize::rank_ref$ranks,",")
+  taxize_rank_ref<-data.frame(rankid=rep(as.integer(taxize::rank_ref$rankid),sapply(separ,length)),
+                              rankname=unlist(separ))
+  taxize_rank_ref<-taxize_rank_ref[1:which(taxize_rank_ref$rankname=="form"),]
+  orderedRanks=taxize_rank_ref$rankname
   if(sum(sapply(obligatory,length)))
   {
     stopifnot(names(obligatory) %in% names(tabGbif) & is(obligatory,"character"))
@@ -503,7 +456,7 @@ analyseGbifTable <- function(searched, tabGbif,rank, obligatory, expected, retur
   }
   tabFiltered <- tabGbif[minimumRequired,,drop=F]
   exact<-(searched == tabFiltered$canonicalname)
-  if(sum(sapply(expected,length)))
+  if(length(expected)&&sum(!is.na(expected)))
   {
     stopifnot(names(expected) %in% names(tabGbif) & is(expected,"character"))
     matExpectGbif<-as.matrix(tabFiltered[names(expected)])
@@ -562,7 +515,11 @@ analyseGbifTable <- function(searched, tabGbif,rank, obligatory, expected, retur
 
 getSuggestsFromResGbif <- function(analysedGbif,ranks=c("family","genus","species","subspecies","variety"))
 {
-  orderedRanks=c("domain","superkingdom","kingdom","subkingdom","infrakingdom","superphylum","phylum","division","subphylum","subdivision","infradivision","superclass","class","subclass","infraclass","subterclass","parvclass","megacohort","supercohort","cohort","subcohort","infracohort","superorder","order","suborder","infraorder","parvorder","superfamily","family","subfamily","supertribe","tribe","subtribe","genus","subgenus","section","subsection","species group","series","species subgroup","species","infraspecies","subspecies","forma specialis","variety","varietas","subvariety","race","stirp","form","forma","morph","subform")
+  separ<-strsplit(taxize::rank_ref$ranks,",")
+  taxize_rank_ref<-data.frame(rankid=rep(as.integer(taxize::rank_ref$rankid),sapply(separ,length)),
+                              rankname=unlist(separ))
+  taxize_rank_ref<-taxize_rank_ref[1:which(taxize_rank_ref$rankname=="form"),]
+  orderedRanks=taxize_rank_ref$rankname
   stopifnot(ranks %in% orderedRanks)
   if(!is.na(analysedGbif$finalRank) && !analysedGbif$finalRank %in% ranks)
   {warning("The rank of the taxon found in the GBIF backbone (",analysedGbif$finalRank,") is not in the extracted ranks")}
@@ -595,119 +552,137 @@ extractEpithet <- function(taxon,higherTaxon=NULL)
   return(epithet)
 }
 
-# taxo<- taxoTDF
-# messagesGbif=F
-# messageOther=T
-# kingdom="Plantae"
 
-analyseTaxoRanksInColAttrib <- function(taxo)
+taxoRanks<-function(taxo)
 {
-  isTaxo<-is(taxo_oneTab)
-  orderedRanks <- c("domain","superkingdom","kingdom","subkingdom","infrakingdom","superphylum","phylum","division","subphylum","subdivision","infradivision","superclass","class","subclass","infraclass","subterclass","parvclass","megacohort","supercohort","cohort","subcohort","infracohort","superorder","order","suborder","infraorder","parvorder","superfamily","family","subfamily","supertribe","tribe","subtribe","genus","subgenus","section","subsection","species group","series","species subgroup","species","infraspecies","subspecies","forma specialis","variety","varietas","subvariety","race","stirp","form","forma","morph","subform")
-  epithetized <- which(orderedRanks=="species"):length(orderedRanks)
-}
-
-taxoRanks <- function(taxo)
-{
-  orderedRanks <- c("domain","superkingdom","kingdom","subkingdom","infrakingdom","superphylum","phylum","division","subphylum","subdivision","infradivision","superclass","class","subclass","infraclass","subterclass","parvclass","megacohort","supercohort","cohort","subcohort","infracohort","superorder","order","suborder","infraorder","parvorder","superfamily","family","subfamily","supertribe","tribe","subtribe","genus","subgenus","section","subsection","species group","series","species subgroup","species","infraspecies","subspecies","forma specialis","variety","varietas","subvariety","race","stirp","form","forma","morph","subform")
-  epithetized <- which(orderedRanks=="species"):length(orderedRanks)
-  cnRanks <- cnRanks_epithetized <- orderedRanks
-  cnRanks[orderedRanks=="class"]<-cnRanks_epithetized[orderedRanks=="class"]<-"taxonomic_class"
-  cnRanks[orderedRanks=="order"]<-cnRanks_epithetized[orderedRanks=="order"]<-"taxonomic_order"
-  cnRanks_epithetized[epithetized] <- paste(cnRanks_epithetized[epithetized],"epithet",sep="_")
-  notNAattributes<-names(attributes(taxo))[!sapply(attributes(taxo),function(x)all(is.na(x)))]
-  attributed_ranks <-which(cnRanks %in% notNAattributes | cnRanks_epithetized %in% notNAattributes)
-  stopifnot(order(attributed_ranks)==1:length(attributed_ranks))
-  attributes_ranks<-mapply(function(x,y)ifelse(is.na(x),y,x),match(cnRanks[attributed_ranks],names(attributes(taxo))),match(cnRanks_epithetized[attributed_ranks],names(attributes(taxo))))
-  numcol_attributed_ranks<-match(unlist(attributes(taxo)[attributes_ranks]),colnames(taxo))
-  minAttributedRank<-orderedRanks[attributed_ranks][1]
-  maxAttributedRank<-orderedRanks[attributed_ranks][length(orderedRanks[attributed_ranks])]
-  unattributed_ranks <-which(cnRanks %in% colnames(taxo) | cnRanks_epithetized %in% colnames(taxo) | orderedRanks %in% colnames(orderedRanks))
-  unattributed_ranks <- unattributed_ranks[!unattributed_ranks %in% attributed_ranks]
-  if(length(unattributed_ranks))
-  {
-    warning("We detected that you might have taxonomic information which may not be accounted for in the taxonomic object, ranks: ", paste0(orderedRanks[unattributed_ranks], collapse=" "))
-  }
-  lowerInfo<-apply(taxo[numcol_attributed_ranks],1,function(x,n)
+  stopifnot(is(taxo,"taxo_oneTab"))
+  ATTR_TR<-attr(taxo,"taxonRanks")
+  stopifnot(order(ATTR_TR$taxize_rankid)==1:nrow(ATTR_TR))
+  mat_taxRanks<-as.matrix(taxo[ATTR_TR$column])
+  lowerInfo<-apply(mat_taxRanks,1,function(x,n)
   {
     if(all(is.na(x))){return(1)}
     max(which(!is.na(x)))+1
   })
-  higherMissing<-apply(taxo[numcol_attributed_ranks],1,function(x,n)
-    {
-      if(!any(is.na(x))){return(n+1)}
-      return(min(which(is.na(x))))
-    },n=length(numcol_attributed_ranks))
+  higherMissing<-apply(mat_taxRanks,1,function(x,n)
+  {
+    if(!any(is.na(x))){return(n+1)}
+    return(min(which(is.na(x))))
+  },n=nrow(ATTR_TR))
   if(any(lowerInfo!=higherMissing))
   {warning("Some of the taxa have missing higher information (see rows ",paste0(which(lowerInfo!=higherMissing),collapse=" "))}
-  LEV<-c("higher",orderedRanks[attributed_ranks])
+  LEV<-c("higher",ATTR_TR$rank)
   return(factor(LEV[lowerInfo],levels=LEV, ordered = T))
 }
 
-searchGbif<-function(taxo,messagesGbif=F,messageOther=T,kingdom="Plantae",excludeFromSuggests=c("exactMatch","Failed"))
+higherRanks <- function(taxo, rank, excludeEpithComponents=T)
 {
-  stopifnot(is(taxo,"taxo_oneTab"))
-  mat<-as.matrix(taxo[na.omit(unlist(attributes(taxo)[c("family","genus","species_epithet","infraspecies_epithet","cf_aff","sp_specif")]))])
-  m_mat<-match(split(mat,row(mat)),split(mat,row(mat)))
-  corresCode<-tapply(m_mat,taxo[[attr(taxo,"taxoCode")]],unique,simplify = F)
-  codePb<-names(corresCode)[sapply(corresCode,length)>1]
-  if(length(codePb)>0)
+  ATTR_TR<-attr(taxo,"taxonRanks")
+  w<-which(ATTR_TR$rank==rank)
+  if(w==1){return(character(0))}
+  HR<-ATTR_TR$rank[1:(w-1)]
+  if(excludeEpithComponents & ATTR_TR[w,"epithetized"])
   {
-    warning("The taxa code do not always correspond to the same taxonomic information, we urge you to use the `checkUnicityCodetax` function to address these problems before querying GBIF\nProblematic codes:",paste(codePb,collapse=" "))
+    toSupp<-c("genus","species")
+    HR<-HR[!HR %in% toSupp]
   }
-  corresGenusFamily<-tapply(taxo[[attr(taxo,"family")]],taxo[[attr(taxo,"genus")]],unique)
-  genusFamPb<-names(corresGenusFamily[sapply(corresGenusFamily,length)>1])
-  if(length(genusFamPb)>0)
-  {
-    warning("The genera do not always have the same family, we urge you to use the `checkUnicityGnInFam` function to address these problems before querying GBIF\nProblematic genera:",paste(genusFamPb,collapse=" "))
-  }
-  ranks<-taxoRanks(taxo)
-  if(any(ranks=="infraspecies_epithet")){
-    tabInfraspecies<-unique(taxo[ranks=="infraspecies_epithet",unlist(attributes(taxo)[c("family","genus","species_epithet","infraspecies_epithet")])])
-    infraspeciesToSearch<-apply(tabInfraspecies[2:4],1,paste)
-    familiesInfraspecies<-tabInfraspecies[[1]]
-    #todo:managing the search and error management of infraspecies
-  }
-  if(any(ranks=="species")){
-    tabSpecies<-unique(taxo[ranks=="species",unlist(attributes(taxo)[c("family","genus","species_epithet")])])
-    matSpecies<-as.matrix(tabSpecies)
-    mSpe<-match(split(mat[,colnames(matSpecies)],row(mat[,colnames(matSpecies)])),split(matSpecies,row(matSpecies)))
-    mSpe[ranks!="species"]<-NA
-    speciesToSearch<-paste(tabSpecies[,2],tabSpecies[,3])
-    familySpecies<-tabSpecies[,1]
-    if(messageOther)
-    {message("Searching for ",length(speciesToSearch)," species in the GBIF Backbone\n...")}
-    resGbifSpe<-taxize::get_gbifid_(speciesToSearch,messages=messagesGbif)
-    if(messageOther)
-    {message("done\nAnalysing GBIF Backbone information")}
-    gbifAnalysed<-mapply(analyseGbifTable,searched=speciesToSearch, tabGbif=resGbifSpe,expected= lapply(as.character(familySpecies),function(x)c(family=x)), MoreArgs=list(rank="species", obligatory=c(kingdom=kingdom)),SIMPLIFY = F)
-    diagnostic<-table(sapply(gbifAnalysed,function(x)x$type))
-    if(messageOther)
-    {
-      message(diagnostic["exactMatch"]," species are found without any modification needed")
-      message(sum(diagnostic[grep("fuzzy",names(diagnostic))])," species are found with suggested orthographic changes")
-      message(sum(diagnostic[grep("synonym",names(diagnostic))])," species are suggested synonyms")
-      message(sum(diagnostic[grep("changeHigherRanks",names(diagnostic))])," species are found with suggested higher rank changes")
-      message(sum(diagnostic[grep("Failed",names(diagnostic))])," species were not found")
-    }
-    suggestedSpecies<-getSuggestsFromListGbif(gbifAnalysed,ranks=c("family","genus","species"),exclude=NULL)
-    suggestedSpecies[attr(taxo,"species_epithet")]<-extractEpithet(suggestedSpecies$species,suggestedSpecies$genus)
-    concernedRowsTaxo<-which(!is.na(mSpe) & !suggestedSpecies$type[mSpe] %in% excludeFromSuggests)
-    # TODO: working on the warnings depending on excludeFromSuggest
-    # Note: here to find the correspondance between suggestedSpecies and the taxo row concerned you may want to use: data.frame(row_taxo=concernedRowsTaxo, row_suggestedSpecies=mSpe[concernedRowsTaxo])
-    data.frame(row=concernedRowsTaxo, )
-  }
-
-  familyToSearch<-na.omit(unique(taxo[[attr(taxo,"family")]]))
-  resGbifFam<-taxize::get_gbifid_(familyToSearch,messages=messagesGbif)
-  perfectMatchOK<-lapply(resGbifFam,function(x){NA})
-
+  return(HR)
 }
 
 
 
-genusSearchGbif <- function(obj)
-{NA}
+checkGbif<-function(taxo,rankCheck,higherRankCheck=higherRanks(taxo,rankCheck),messagesGbif=F,messagesOther=T,filters=c(kingdom="Plantae"), excludeFromSuggests=c("exactMatch","Failed"), epithetizeSuggests=T, returnGbifRes=F, returnFailed=T)
+{
+  #Checking conditions for application
+  stopifnot(is(taxo,"taxo_oneTab"))
+  ATTR_TR<-attr(taxo,"taxonRanks")
+  stopifnot(length(rankCheck==1) & rankCheck %in% ATTR_TR$rank)
+  stopifnot(higherRankCheck %in% ATTR_TR$rank)
+  stopifnot(ATTR_TR$taxize_rankid[ATTR_TR$rank %in% higherRankCheck] < ATTR_TR$taxize_rankid[ATTR_TR$rank == rankCheck])
+  # preparing the filter for rows corresponding to the rank
+  rankOk <- taxoRanks(taxo)==rankCheck
+  stopifnot(sum(rankOk)>0)
 
-spSearchGbif <- function(obj)
-{NA}
+  # preparing the taxa to search
+  tax <- getRank(taxo[rankOk,,drop=F], rankCheck)
+  toSearch <- unique(tax)
+  if(messagesOther)
+  {message("Searching for ",length(toSearch)," taxa in the GBIF Backbone\n...")}
+  resGbifTax<-taxize::get_gbifid_(toSearch,messages=messagesGbif)
+  if(messagesOther)
+  {message("done")}
+
+  # preparing the data for analysing gbif search results (higher ranks etc)
+  HR_tab<-as.data.frame(lapply(higherRankCheck,getRank,taxo=taxo[rankOk,,drop=F]))
+  if(!length(higherRankCheck)){HR_tab<-data.frame(matrix(nrow=sum(rankOk),ncol=0))}
+  colnames(HR_tab)<-higherRankCheck
+  tabRanks<-data.frame(cbind(HR_tab,tax))
+  unTabRanks<-unique(tabRanks)
+  m<-match(unTabRanks$tax,toSearch)
+  searchedTax<-toSearch[m]
+  resGbifTax<-resGbifTax[m]
+  HR<-apply(unTabRanks,1,function(x,cn){res<-x[cn!="tax"]; names(res)<-cn[cn!="tax"] ; return(res)},cn=colnames(unTabRanks),simplify = F)
+
+  # analysing gbif results
+  if(messagesOther)
+  {message("done\nAnalysing GBIF Backbone information")}
+  gbifAnalysed<-mapply(analyseGbifTable,searched=searchedTax, tabGbif=resGbifTax,expected=HR, MoreArgs=list(rank=rankCheck, obligatory= filters),SIMPLIFY = F)
+  diagnostic<-table(sapply(gbifAnalysed,function(x)x$type))
+  if(messagesOther)
+  {
+    message(diagnostic["exactMatch"]," taxa are found without any modification needed")
+    message(sum(diagnostic[grep("fuzzy",names(diagnostic))])," taxa are found with suggested orthographic changes")
+    message(sum(diagnostic[grep("synonym",names(diagnostic))])," taxa are suggested synonyms")
+    message(sum(diagnostic[grep("changeHigherRanks",names(diagnostic))])," taxa are found with suggested higher rank changes")
+    message(sum(diagnostic[grep("Failed",names(diagnostic))])," taxa were not found")
+  }
+
+  # getting suggested taxa (epithetized if needed)
+  rankSuggests<-c(higherRanks(taxo,rankCheck,excludeEpithComponents = F),rankCheck)
+  suggestedTax<-getSuggestsFromListGbif(gbifAnalysed,ranks=rankSuggests,exclude=NULL)
+  if(epithetizeSuggests)
+  {
+    epithetizable<-c("species","infraspecies","subspecies","variety","form")
+    ATTR_epithetizable<-ATTR_TR[na.omit(match(epithetizable,ATTR_TR$rank)),]
+    supp<-ATTR_epithetizable$rank[!ATTR_epithetizable$epithetized]
+    toEpithetize<-epithetizable[!epithetizable %in% supp & epithetizable %in% rankSuggests]
+    if(length(toEpithetize))
+    {
+      higherRanks_epi<-rep("species",length(toEpithetize))
+      higherRanks_epi[toEpithetize=="species"]<-"genus"
+      epithetized_suggest <- as.data.frame(mapply(extractEpithet,as.list(suggestedTax[,toEpithetize,drop=F]),suggestedTax[,higherRanks_epi,drop=F],SIMPLIFY = F))
+      suggestedTax[toEpithetize]<-epithetized_suggest
+    }
+  }else{toEpithetize=character()}
+  # define colnames for ranks
+  tabDecision<-data.frame(cn=rankSuggests,
+             inATTR=rankSuggests%in%ATTR_TR$rank,
+             epiHere=rankSuggests%in%toEpithetize,
+             epiATTR=NA,
+             nameATTR=NA,
+             naturalName=ifelse(rankSuggests%in%toEpithetize, paste(rankSuggests,"epithet",sep="_"), rankSuggests),
+             finalName=NA
+             )
+  m<-match(tabDecision$cn[tabDecision$inATTR],ATTR_TR$rank)
+  tabDecision$nameATTR[tabDecision$inATTR]<-ATTR_TR[m,"column"]
+  tabDecision$epiATTR[tabDecision$inATTR]<-ATTR_TR[m,"epithetized"]
+  tabDecision$finalName[is.na(tabDecision$nameATTR)|(tabDecision$epiHere!=tabDecision$epiATTR)]<-tabDecision$naturalName[is.na(tabDecision$nameATTR)|(tabDecision$epiHere!=tabDecision$epiATTR)]
+  tabDecision$finalName[!is.na(tabDecision$nameATTR)&(tabDecision$epiHere==tabDecision$epiATTR)]<-tabDecision$nameATTR[!is.na(tabDecision$nameATTR)&(tabDecision$epiHere==tabDecision$epiATTR)]
+  stopifnot(!is.na(tabDecision$finalName))
+  tabDecision$finalName<-paste("suggest",tabDecision$finalName,sep="_")
+  mcn<-match(colnames(suggestedTax),tabDecision$cn)
+  colnames(suggestedTax)[!is.na(mcn)]<-tabDecision$finalName[na.omit(mcn)]
+
+  # Getting what rows are concerned
+  suggestedAllRows<-data.frame(row=(1:nrow(taxo))[rankOk],
+                               extract(taxo,c("taxoCode","plot","taxonRanks"),onlyRanks = rankSuggests)[rankOk,],
+    suggestedTax[match(split(as.matrix(tabRanks),row(as.matrix(tabRanks))), split(as.matrix(unTabRanks),row(as.matrix(unTabRanks)))),]
+  ,row.names=NULL)
+  suggested<-suggestedAllRows[!suggestedAllRows$type%in%excludeFromSuggests,]
+  res<-list(rowRankOk=which(rankOk))
+  res<-list(rowRankOk=which(rankOk),suggested=suggested)
+  if(returnGbifRes)
+  {
+
+  }
+}
