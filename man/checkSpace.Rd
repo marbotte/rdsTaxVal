@@ -11,6 +11,15 @@ checkSpace(
   show_space = "#"
 )
 }
+\arguments{
+\item{taxo}{taxonomic table (of class taxo_oneTab)}
+
+\item{parts}{TODO: document}
+
+\item{show_ref}{TODO: document}
+
+\item{show_space}{TODO: document}
+}
 \description{
 Check for irregular spaces in a taxonomic table and suggest corrections
 }

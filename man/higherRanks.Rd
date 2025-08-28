@@ -6,6 +6,13 @@
 \usage{
 higherRanks(taxo, rank, excludeEpithComponents = T)
 }
+\arguments{
+\item{taxo}{taxonomic table (of class taxo_oneTab)}
+
+\item{rank}{TODO: document}
+
+\item{excludeEpithComponents}{TODO: document}
+}
 \description{
 Determine which higher ranks can be found from a taxonomic table
 }

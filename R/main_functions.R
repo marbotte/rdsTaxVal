@@ -9,14 +9,15 @@
 #' data.frame for each plot, or a single data.frame
 #' @param currentFormat describe the format of obj: "listPlot" for a list of
 #' plots and "oneTable" for a single
-#' @param family name of the family column
-#' @param genus name of the genus column
-#' @param epithet name of the specific epithet column
-#' @param infraspecies_epithet name of the infraspecific epithet column
 #' @param taxoCode name of the column code corresponding to code of the taxon
+#' @param taxonRanks_names named character vector (names:rank as defined in taxize, content name of the column)
+#' @param taxonRanks_epithetized names of the columns (as in taxonRanks_names) which correspond to epithets
+#' @param morphoQualifiers named character vector, the names are the types of qualifiers, the contents are the names of the object fields. For now it only work with cf_aff and sp_specif
+#' @param comments name of the column containing the comments
 #' @param plot name of the plot (name of the permanent plot) column
-#' @param cf_aff name of the column containing the cf. or aff. expression
-#' @param sp_specif name of the column containg information about the morphospecies
+#'
+#' @export
+#'
 
 new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRanks_names = c(family = "family", genus = "genus", species = "specificEpithet", infraspecies = "infraspecificEpithet"), taxonRanks_epithetized=c("specificEpithet", "infraspecificEpithet"), taxoCode="code", plot="plot", morphoQualifiers=c(cf_aff = "identificationQualifier", sp_specif = "verbatimTaxonRank"), comments="comments")
 {
@@ -83,6 +84,11 @@ new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRan
 
 #' Extract information from a taxonomic table
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param parts parts of the taxonomic information you want to extract (from the following list: "taxonRanks","taxoCode","plot","morphoQualifiers","comments")
+#' @param onlyRanks ranks (as defined in `taxize` package) to be extracted when "taxonRanks" in the `parts` if null all the ranks are extracted
+#' @param onlyQualifiers qualifiers (cf_aff and/or sp_specif) to be extracted when "taxonRanks" in the `parts` if null all the ranks are extracted
+#' @export
 extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers","comments"),onlyRanks=NULL,onlyQualifiers=NULL)
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -127,6 +133,9 @@ extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers
 
 #' Get taxon information at a particular taxonomic rank from a taxonomic table
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param rank TODO: document
+#' @export
 getRank <- function(taxo, rank)
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -144,6 +153,9 @@ getRank <- function(taxo, rank)
 
 #' Correct a taxonomic table according to a table of suggested corrections
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param suggested TODO: document
+#' @export
 correct<-function(taxo, suggested)
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -212,6 +224,11 @@ correct<-function(taxo, suggested)
 
 #' Check for irregular spaces in a taxonomic table and suggest corrections
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param parts TODO: document
+#' @param show_ref TODO: document
+#' @param show_space TODO: document
+#' @export
 checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -248,6 +265,8 @@ checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQuali
 
 #' Check for bad formatted undetermination qualifiers and suggest corrections
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @export
 checkUndetermited <- function(taxo)
 # Note: when there are cases of Indet or Morpho, species code should be checked for relevant information
 {
@@ -345,6 +364,10 @@ checkUndetermited <- function(taxo)
 
 #' Check whether taxa of a particular rank are consistently always in the same higher rank and suggest corrections
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param rank TODO: document
+#' @param superior TODO: document
+#' @export
 checkUnicityRankSup <- function(taxo,rank="genus",superior="family")
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -368,6 +391,9 @@ checkUnicityRankSup <- function(taxo,rank="genus",superior="family")
 
 #' Check whether taxonomic codes are alway associated with the same taxonomic information and suggests corrections
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param noMajority TODO: document
+#' @export
 checkUnicityCodetax <- function(taxo, noMajority=c("skip","takeFirst","stop"))
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -427,6 +453,10 @@ checkUnicityCodetax <- function(taxo, noMajority=c("skip","takeFirst","stop"))
 
 #' Format and show results from the analysis of unicity of information associated with taxonomic codes
 #'
+#' @param resUnicityCodeTax TODO: document
+#' @param type TODO: document
+#' @param code TODO: document
+#' @export
 showUnicityCodetax<-function(resUnicityCodeTax,type=c("code","problems","suggested"),code=NA)
 {
   type<-match.arg(type)
@@ -450,6 +480,13 @@ showUnicityCodetax<-function(resUnicityCodeTax,type=c("code","problems","suggest
 
 #' Analyse a table obtained from a gbif backbone search
 #'
+#' @param searched TODO: document
+#' @param tabGbif TODO: document
+#' @param rank TODO: document
+#' @param obligatory TODO: document
+#' @param expected TODO: document
+#' @param returnGbifRes TODO: document
+#' @export
 analyseGbifTable <- function(searched, tabGbif,rank, obligatory, expected, returnGbifRes=T)
 {
   separ<-strsplit(taxize::rank_ref$ranks,",")
@@ -533,6 +570,9 @@ analyseGbifTable <- function(searched, tabGbif,rank, obligatory, expected, retur
 
 #' Get suggested taxonomic information from an analysed table from a search in the Gbif backbone
 #'
+#' @param analysedGbif TODO: document
+#' @param ranks TODO: document
+#' @export
 getSuggestsFromResGbif <- function(analysedGbif,ranks=c("family","genus","species","subspecies","variety"))
 {
   separ<-strsplit(taxize::rank_ref$ranks,",")
@@ -552,6 +592,10 @@ getSuggestsFromResGbif <- function(analysedGbif,ranks=c("family","genus","specie
 
 #' Get suggested taxa from a list of analysed tables from Gbif backbone searches
 #'
+#' @param listAnalysedGbif TODO: document
+#' @param ranks TODO: document
+#' @param exclude TODO: document
+#' @export
 getSuggestsFromListGbif <- function(listAnalysedGbif,ranks=c("family","genus","species","subspecies","variety"), exclude=c("exactMatch"))
 {
   suggested<-Reduce(rbind,lapply(listAnalysedGbif,getSuggestsFromResGbif,ranks=ranks))
@@ -562,6 +606,9 @@ getSuggestsFromListGbif <- function(listAnalysedGbif,ranks=c("family","genus","s
 
 #' Extract epithets from full name taxa
 #'
+#' @param taxon TODO: document
+#' @param higherTaxon TODO: document
+#' @export
 extractEpithet <- function(taxon,higherTaxon=NULL)
 {
   epithet <- sapply(strsplit(taxon,"[[:space:]]"),function(x)x[length(x)])
@@ -579,6 +626,8 @@ extractEpithet <- function(taxon,higherTaxon=NULL)
 
 #' Extract the taxonomic ranks of taxa from a taxonomic table
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @export
 taxoRanks<-function(taxo)
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -603,6 +652,11 @@ taxoRanks<-function(taxo)
 
 #' Determine which higher ranks can be found from a taxonomic table
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param rank TODO: document
+#' @param excludeEpithComponents TODO: document
+#'
+#' @export
 higherRanks <- function(taxo, rank, excludeEpithComponents=T)
 {
   ATTR_TR<-attr(taxo,"taxonRanks")
@@ -621,6 +675,19 @@ higherRanks <- function(taxo, rank, excludeEpithComponents=T)
 
 #' Check in the gbif backbone whether taxa from a particular rank in a table are erroneous and suggests corrections
 #'
+#' @param taxo taxonomic table (of class taxo_oneTab)
+#' @param rankCheck TODO: document
+#' @param higherRankCheck TODO: document
+#' @param messagesGbif TODO: document
+#' @param messagesOther TODO: document
+#' @param filters TODO: document
+#' @param excludeFromSuggests TODO: document
+#' @param epithetizeSuggests TODO: document
+#' @param returnGbifRes TODO: document
+#' @param returnAnalysedGbif TODO: document
+#' @param returnFailed TODO: document
+#' @param returnExactMatches TODO: document
+#' @export
 checkGbif<-function(taxo,rankCheck,higherRankCheck=higherRanks(taxo,rankCheck),messagesGbif=F,messagesOther=T,filters=c(kingdom="Plantae"), excludeFromSuggests=c("exactMatch","Failed"), epithetizeSuggests=T, returnGbifRes=F, returnAnalysedGbif = !returnGbifRes, returnFailed="Failed" %in% excludeFromSuggests, returnExactMatches=F)
 {
   #Checking conditions for application

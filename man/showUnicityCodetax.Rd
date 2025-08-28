@@ -10,6 +10,13 @@ showUnicityCodetax(
   code = NA
 )
 }
+\arguments{
+\item{resUnicityCodeTax}{TODO: document}
+
+\item{type}{TODO: document}
+
+\item{code}{TODO: document}
+}
 \description{
 Format and show results from the analysis of unicity of information associated with taxonomic codes
 }

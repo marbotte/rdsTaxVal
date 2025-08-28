@@ -24,21 +24,17 @@ data.frame for each plot, or a single data.frame}
 \item{currentFormat}{describe the format of obj: "listPlot" for a list of
 plots and "oneTable" for a single}
 
+\item{taxonRanks_names}{named character vector (names:rank as defined in taxize, content name of the column)}
+
+\item{taxonRanks_epithetized}{names of the columns (as in taxonRanks_names) which correspond to epithets}
+
 \item{taxoCode}{name of the column code corresponding to code of the taxon}
 
 \item{plot}{name of the plot (name of the permanent plot) column}
 
-\item{family}{name of the family column}
+\item{morphoQualifiers}{named character vector, the names are the types of qualifiers, the contents are the names of the object fields. For now it only work with cf_aff and sp_specif}
 
-\item{genus}{name of the genus column}
-
-\item{epithet}{name of the specific epithet column}
-
-\item{infraspecies_epithet}{name of the infraspecific epithet column}
-
-\item{cf_aff}{name of the column containing the cf. or aff. expression}
-
-\item{sp_specif}{name of the column containg information about the morphospecies}
+\item{comments}{name of the column containing the comments}
 }
 \description{
 Technically this creates an object with a new class inherited from data.frame

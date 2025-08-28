@@ -19,6 +19,31 @@ checkGbif(
   returnExactMatches = F
 )
 }
+\arguments{
+\item{taxo}{taxonomic table (of class taxo_oneTab)}
+
+\item{rankCheck}{TODO: document}
+
+\item{higherRankCheck}{TODO: document}
+
+\item{messagesGbif}{TODO: document}
+
+\item{messagesOther}{TODO: document}
+
+\item{filters}{TODO: document}
+
+\item{excludeFromSuggests}{TODO: document}
+
+\item{epithetizeSuggests}{TODO: document}
+
+\item{returnGbifRes}{TODO: document}
+
+\item{returnAnalysedGbif}{TODO: document}
+
+\item{returnFailed}{TODO: document}
+
+\item{returnExactMatches}{TODO: document}
+}
 \description{
 Check in the gbif backbone whether taxa from a particular rank in a table are erroneous and suggests corrections
 }

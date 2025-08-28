@@ -9,6 +9,11 @@ getSuggestsFromResGbif(
   ranks = c("family", "genus", "species", "subspecies", "variety")
 )
 }
+\arguments{
+\item{analysedGbif}{TODO: document}
+
+\item{ranks}{TODO: document}
+}
 \description{
 Get suggested taxonomic information from an analysed table from a search in the Gbif backbone
 }

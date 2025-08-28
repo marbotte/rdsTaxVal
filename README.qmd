@@ -10,12 +10,17 @@ require(knitr)
 ```
 
 
-## sourcing the function (development phase)
+## Installing the package
+
+You may install the `rdsTaxVal` package with the following command:
+
+```r
+devtools::install_github("marbotte/rdsTaxVal")
+```
+## Loading the package
 
 ```{r}
-
-lapply(dir("R"),function(x)source(paste("R",x,sep="/")))
-
+library(rdsTaxVal)
 ```
 
 

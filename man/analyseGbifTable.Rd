@@ -13,6 +13,19 @@ analyseGbifTable(
   returnGbifRes = T
 )
 }
+\arguments{
+\item{searched}{TODO: document}
+
+\item{tabGbif}{TODO: document}
+
+\item{rank}{TODO: document}
+
+\item{obligatory}{TODO: document}
+
+\item{expected}{TODO: document}
+
+\item{returnGbifRes}{TODO: document}
+}
 \description{
 Analyse a table obtained from a gbif backbone search
 }

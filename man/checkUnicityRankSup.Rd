@@ -6,6 +6,13 @@
 \usage{
 checkUnicityRankSup(taxo, rank = "genus", superior = "family")
 }
+\arguments{
+\item{taxo}{taxonomic table (of class taxo_oneTab)}
+
+\item{rank}{TODO: document}
+
+\item{superior}{TODO: document}
+}
 \description{
 Check whether taxa of a particular rank are consistently always in the same higher rank and suggest corrections
 }

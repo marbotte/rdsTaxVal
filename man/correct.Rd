@@ -6,6 +6,11 @@
 \usage{
 correct(taxo, suggested)
 }
+\arguments{
+\item{taxo}{taxonomic table (of class taxo_oneTab)}
+
+\item{suggested}{TODO: document}
+}
 \description{
 Correct a taxonomic table according to a table of suggested corrections
 }

@@ -6,6 +6,11 @@
 \usage{
 extractEpithet(taxon, higherTaxon = NULL)
 }
+\arguments{
+\item{taxon}{TODO: document}
+
+\item{higherTaxon}{TODO: document}
+}
 \description{
 Extract epithets from full name taxa
 }

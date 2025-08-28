@@ -6,6 +6,11 @@
 \usage{
 getRank(taxo, rank)
 }
+\arguments{
+\item{taxo}{taxonomic table (of class taxo_oneTab)}
+
+\item{rank}{TODO: document}
+}
 \description{
 Get taxon information at a particular taxonomic rank from a taxonomic table
 }

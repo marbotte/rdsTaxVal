@@ -10,6 +10,13 @@ getSuggestsFromListGbif(
   exclude = c("exactMatch")
 )
 }
+\arguments{
+\item{listAnalysedGbif}{TODO: document}
+
+\item{ranks}{TODO: document}
+
+\item{exclude}{TODO: document}
+}
 \description{
 Get suggested taxa from a list of analysed tables from Gbif backbone searches
 }
