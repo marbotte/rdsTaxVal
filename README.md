@@ -31,14 +31,14 @@ library(rdsTaxVal)
 ``` r
 rdsBST<-readRDS("../data_google/4.rdsProyectos/dataRedBSTCol.rds")
 rdsTDF<-readRDS("../data_google/4.rdsProyectos/dataTDF.rds")
-rdsTDF$taxonomy$family<-as.character(rdsTDF$taxonomy$family)
+#rdsTDF$taxonomy$family<-as.character(rdsTDF$taxonomy$family)
 ```
 
 ## Creating the oneTable objects
 
 ``` r
 taxoBST <- new_taxo_oneTab(rdsBST$taxonomy)
-taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", taxonRanks_names = c(family="family", genus="genus",species="sp_epithet"), taxonRanks_epithetized = c("sp_epithet"))
+taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, currentFormat = "oneTable", taxonRanks_names = c(family="family", genus="genus",species="sp_epithet"), taxonRanks_epithetized = c("sp_epithet"))
 
 taxoBST[arrayInd(which(as.matrix(taxoBST) %in% c("","N/D","NA","N/A")), .dim=dim(taxoBST), useNames = T)] <- NA
 taxoTDF[arrayInd(which(as.matrix(taxoTDF) %in% c("","N/D","NA","N/A")), .dim=dim(taxoTDF), useNames = T)] <- NA
@@ -74,7 +74,12 @@ kable(suggested_spaces_TDF)
 
 ``` r
 taxoTDF<-correct(taxoTDF,suggested_spaces_TDF)
+table(taxoRanks(taxoTDF))
 ```
+
+
+     higher  family   genus species 
+          0       0       0     891 
 
 ## Manage undetermined taxa
 
@@ -121,7 +126,12 @@ kable(head(suggested_undetermined_TDF))
 
 ``` r
 taxoTDF<-correct(taxoTDF,suggested_undetermined_TDF)
+table(taxoRanks(taxoTDF))
 ```
+
+
+     higher  family   genus species 
+          7      10     221     653 
 
 ## Structural problems
 
@@ -156,7 +166,12 @@ kable(head(suggested_unicity_familyTDF))
 
 ``` r
 taxoTDF<- correct(taxoTDF,suggested_unicity_familyTDF)
+table(taxoRanks(taxoTDF))
 ```
+
+
+     higher  family   genus species 
+          7      10     221     653 
 
 ### Are taxonomic codes always associated with the same information
 
@@ -192,7 +207,12 @@ kable(head(showUnicityCodetax(suggested_taxoCodeTDF,"suggested")))
 
 ``` r
 taxoTDF<-correct(taxoTDF, suggested_taxoCodeTDF)
+table(taxoRanks(taxoTDF))
 ```
+
+
+     higher  family   genus species 
+          7      10     221     653 
 
 ## Using the gbif backbone to get suggested corrections
 
@@ -237,7 +257,40 @@ taxoBST<-correct(taxoBST,suggested_species_gbif_BST)
 
 ``` r
 suggested_genus_gbif_BST<-checkGbif(taxoBST,rankCheck="genus")
+```
+
+    Searching for 178 taxa in the GBIF Backbone
+    ...
+
+    done
+
+    done
+    Analysing GBIF Backbone information
+
+    166 taxa are found without any modification needed
+
+    3 taxa are found with suggested orthographic changes
+
+    4 taxa are suggested synonyms
+
+    2 taxa are found with suggested higher rank changes
+
+    4 taxa were not found
+
+``` r
 kable(head(suggested_genus_gbif_BST$suggested))
+```
+
+|  | row | code | plot | family | genus | type | suggest_family | suggest_genus | gbifid |
+|:---|---:|:---|:---|:---|:---|:---|:---|:---|---:|
+| 1 | 10 | Cordsp2 | AltoSanJorgeInicial | Boraginaceae | Cordia | exactMatch_changeHigherRanks | Cordiaceae | Cordia | 2900865 |
+| 55 | 455 | Cordsp1 | BelloHorizonteInicial | Boraginaceae | Cordia | exactMatch_changeHigherRanks | Cordiaceae | Cordia | 2900865 |
+| 56 | 456 | Cordsp2 | BelloHorizonteInicial | Boraginaceae | Cordia | exactMatch_changeHigherRanks | Cordiaceae | Cordia | 2900865 |
+| 58 | 462 | Amphsp | BeltranP10 | Bignoniaceae | Amphillophium | fuzzyMatch | Bignoniaceae | Amphilophium | 3172588 |
+| 108 | 820 | Ampesp | CambaoP18 | Ulmaceae | Ampelocera | exactMatch_changeHigherRanks | Cannabaceae | Ampelocera | 7303603 |
+| 109 | 829 | Cordsp | CambaoP18 | Boraginaceae | Cordia | exactMatch_changeHigherRanks | Cordiaceae | Cordia | 2900865 |
+
+``` r
 taxoBST<-correct(taxoBST,suggested_genus_gbif_BST)
 ```
 
@@ -272,4 +325,115 @@ kable(head(suggested_family_gbif_BST$suggested))
 
 ``` r
 taxoBST<-correct(taxoBST,suggested_family_gbif_BST)
+```
+
+``` r
+suggested_species_gbif_TDF<-checkGbif(taxoTDF,rankCheck="species")
+```
+
+    Searching for 292 taxa in the GBIF Backbone
+    ...
+
+    done
+
+    done
+    Analysing GBIF Backbone information
+
+    259 taxa are found without any modification needed
+
+    3 taxa are found with suggested orthographic changes
+
+    23 taxa are suggested synonyms
+
+    10 taxa are found with suggested higher rank changes
+
+    1 taxa were not found
+
+``` r
+kable(head(suggested_species_gbif_TDF$suggested))
+```
+
+|  | row | code | plot | family | genus | sp_epithet | type | suggest_family | suggest_genus | suggest_sp_epithet | gbifid |
+|:---|---:|:---|:---|:---|:---|:---|:---|:---|:---|:---|---:|
+| 7 | 9 | Bauhhyme | CardonalLoma | Fabaceae | Bauhinia | hymenaeifolia | exactMatch_synonym | Fabaceae | Schnella | hymenaeifolia | 2953134 |
+| 20 | 25 | Cordgera | CardonalLoma | Boraginaceae | Cordia | gerascanthus | exactMatch_changeHigherRanks | Cordiaceae | Cordia | gerascanthus | 5341264 |
+| 44 | 62 | Seguamer | CardonalLoma | Petiveriaceae | Seguieria | americana | exactMatch_changeHigherRanks | Phytolaccaceae | Seguieria | americana | 4192680 |
+| 57 | 77 | Zizistry | CardonalLoma | Rhamnaceae | Ziziphus | strychnifolia | exactMatch_synonym | Rhamnaceae | Sarcomphalus | strychnifolius | 8759836 |
+| 65 | 88 | Bauhhyme | CardonalPlana | Fabaceae | Bauhinia | hymenaeifolia | exactMatch_synonym | Fabaceae | Schnella | hymenaeifolia | 2953134 |
+| 78 | 102 | Cordgera | CardonalPlana | Boraginaceae | Cordia | gerascanthus | exactMatch_changeHigherRanks | Cordiaceae | Cordia | gerascanthus | 5341264 |
+
+``` r
+taxoTDF<-correct(taxoTDF,suggested_species_gbif_TDF)
+```
+
+``` r
+suggested_genus_gbif_TDF<-checkGbif(taxoTDF,rankCheck="genus")
+```
+
+    Searching for 98 taxa in the GBIF Backbone
+    ...
+
+    done
+
+    done
+    Analysing GBIF Backbone information
+
+    94 taxa are found without any modification needed
+
+    1 taxa are found with suggested orthographic changes
+
+    2 taxa are suggested synonyms
+
+    2 taxa are found with suggested higher rank changes
+
+    0 taxa were not found
+
+``` r
+kable(head(suggested_genus_gbif_TDF$suggested))
+```
+
+|  | row | code | plot | family | genus | type | suggest_family | suggest_genus | gbifid |
+|:---|---:|:---|:---|:---|:---|:---|:---|:---|---:|
+| 1 | 2 | Ampesp1 | CardonalLoma | Ulmaceae | Ampelocera | exactMatch_changeHigherRanks | Cannabaceae | Ampelocera | 7303603 |
+| 2 | 3 | Ampesp1 | CardonalLoma | Ulmaceae | Ampelocera | exactMatch_changeHigherRanks | Cannabaceae | Ampelocera | 7303603 |
+| 21 | 83 | Ampesp1 | CardonalPlana | Ulmaceae | Ampelocera | exactMatch_changeHigherRanks | Cannabaceae | Ampelocera | 7303603 |
+| 22 | 84 | Ampesp1 | CardonalPlana | Ulmaceae | Ampelocera | exactMatch_changeHigherRanks | Cannabaceae | Ampelocera | 7303603 |
+| 24 | 103 | Cordsp | CardonalPlana | Boraginaceae | Cordia | exactMatch_changeHigherRanks | Cordiaceae | Cordia | 2900865 |
+| 25 | 104 | Cordsp | CardonalPlana | Boraginaceae | Cordia | exactMatch_changeHigherRanks | Cordiaceae | Cordia | 2900865 |
+
+``` r
+taxoTDF<-correct(taxoTDF,suggested_genus_gbif_TDF)
+```
+
+``` r
+suggested_family_gbif_TDF<-checkGbif(taxoTDF,rankCheck="family")
+```
+
+    Searching for 3 taxa in the GBIF Backbone
+    ...
+
+    done
+
+    done
+    Analysing GBIF Backbone information
+
+    3 taxa are found without any modification needed
+
+    0 taxa are found with suggested orthographic changes
+
+    0 taxa are suggested synonyms
+
+    0 taxa are found with suggested higher rank changes
+
+    0 taxa were not found
+
+``` r
+kable(head(suggested_family_gbif_TDF$suggested))
+```
+
+| row | code | plot | family | type | suggest_family | gbifid |
+|----:|:-----|:-----|:-------|:-----|:---------------|-------:|
+
+``` r
+taxoTDF<-correct(taxoTDF,suggested_family_gbif_TDF)
 ```

@@ -34,7 +34,7 @@ library(rdsTaxVal)
 ```{r}
 rdsBST<-readRDS("../data_google/4.rdsProyectos/dataRedBSTCol.rds")
 rdsTDF<-readRDS("../data_google/4.rdsProyectos/dataTDF.rds")
-rdsTDF$taxonomy$family<-as.character(rdsTDF$taxonomy$family)
+#rdsTDF$taxonomy$family<-as.character(rdsTDF$taxonomy$family)
 ```
 
 ## Creating the oneTable objects
@@ -42,7 +42,7 @@ rdsTDF$taxonomy$family<-as.character(rdsTDF$taxonomy$family)
 
 ```{r}
 taxoBST <- new_taxo_oneTab(rdsBST$taxonomy)
-taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, "oneTable", taxonRanks_names = c(family="family", genus="genus",species="sp_epithet"), taxonRanks_epithetized = c("sp_epithet"))
+taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, currentFormat = "oneTable", taxonRanks_names = c(family="family", genus="genus",species="sp_epithet"), taxonRanks_epithetized = c("sp_epithet"))
 
 taxoBST[arrayInd(which(as.matrix(taxoBST) %in% c("","N/D","NA","N/A")), .dim=dim(taxoBST), useNames = T)] <- NA
 taxoTDF[arrayInd(which(as.matrix(taxoTDF) %in% c("","N/D","NA","N/A")), .dim=dim(taxoTDF), useNames = T)] <- NA
@@ -63,6 +63,7 @@ taxoBST<-correct(taxoBST,suggested_spaces_BST)
 suggested_spaces_TDF<-checkSpace(taxoTDF)
 kable(suggested_spaces_TDF)
 taxoTDF<-correct(taxoTDF,suggested_spaces_TDF)
+table(taxoRanks(taxoTDF))
 ```
 
 ## Manage undetermined taxa
@@ -77,6 +78,7 @@ taxoBST<-correct(taxoBST,suggested_undetermined_BST)
 suggested_undetermined_TDF<-checkUndetermited(taxoTDF)
 kable(head(suggested_undetermined_TDF))
 taxoTDF<-correct(taxoTDF,suggested_undetermined_TDF)
+table(taxoRanks(taxoTDF))
 ```
 
 
@@ -94,6 +96,7 @@ taxoBST<-correct(taxoBST, suggested_unicity_familyBST)
 suggested_unicity_familyTDF<-checkUnicityRankSup(taxoTDF, rank="genus",superior="family")
 kable(head(suggested_unicity_familyTDF))
 taxoTDF<- correct(taxoTDF,suggested_unicity_familyTDF)
+table(taxoRanks(taxoTDF))
 ```
 
 ### Are taxonomic codes always associated with the same information
@@ -108,6 +111,7 @@ taxoBST<-correct(taxoBST, suggested_taxoCodeBST)
 suggested_taxoCodeTDF <- checkUnicityCodetax(taxoTDF,"takeFirst")
 kable(head(showUnicityCodetax(suggested_taxoCodeTDF,"suggested")))
 taxoTDF<-correct(taxoTDF, suggested_taxoCodeTDF)
+table(taxoRanks(taxoTDF))
 ```
 
 ## Using the gbif backbone to get suggested corrections
@@ -128,4 +132,23 @@ taxoBST<-correct(taxoBST,suggested_genus_gbif_BST)
 suggested_family_gbif_BST<-checkGbif(taxoBST,rankCheck="family")
 kable(head(suggested_family_gbif_BST$suggested))
 taxoBST<-correct(taxoBST,suggested_family_gbif_BST)
+```
+
+
+```{r}
+suggested_species_gbif_TDF<-checkGbif(taxoTDF,rankCheck="species")
+kable(head(suggested_species_gbif_TDF$suggested))
+taxoTDF<-correct(taxoTDF,suggested_species_gbif_TDF)
+```
+
+```{r}
+suggested_genus_gbif_TDF<-checkGbif(taxoTDF,rankCheck="genus")
+kable(head(suggested_genus_gbif_TDF$suggested))
+taxoTDF<-correct(taxoTDF,suggested_genus_gbif_TDF)
+```
+
+```{r}
+suggested_family_gbif_TDF<-checkGbif(taxoTDF,rankCheck="family")
+kable(head(suggested_family_gbif_TDF$suggested))
+taxoTDF<-correct(taxoTDF,suggested_family_gbif_TDF)
 ```
