@@ -476,7 +476,16 @@ showUnicityCodetax<-function(resUnicityCodeTax,type=c("code","problems","suggest
     }}
 }
 
-
+# for(i in 1:length(searchedTax))
+# {taxon<-searchedTax[i]
+# n<-which(searchedTax==taxon)
+# searched=searchedTax[n]
+# tabGbif=resGbifTax[[n]]
+# expected=HR[[n]]
+# rank=rankCheck
+# obligatory= filters
+# analyseGbifTable(searched, tabGbif,rank, obligatory, expected)
+# }
 
 #' Analyse a table obtained from a gbif backbone search
 #'
@@ -489,17 +498,23 @@ showUnicityCodetax<-function(resUnicityCodeTax,type=c("code","problems","suggest
 #' @export
 analyseGbifTable <- function(searched, tabGbif,rank, obligatory, expected, returnGbifRes=T)
 {
+  if(!nrow(tabGbif))
+  {
+    res<-list(type = "Failed",  canonicalname = NA,  authorship = NA, gbifid = NA, initialRank = NA, finalRank = NA, synonym = data.frame(gbifid = numeric(), scientificname = character()), modifiedHR = NULL, higherRanks = data.frame(rank = character(),  canonicalname = character(),  gbifid = numeric()), parent_gbifid = numeric())
+    if(returnGbifRes){res$gbifTab <- tabGbif}
+    return(res)
+  }
   separ<-strsplit(taxize::rank_ref$ranks,",")
   taxize_rank_ref<-data.frame(rankid=rep(as.integer(taxize::rank_ref$rankid),sapply(separ,length)),
                               rankname=unlist(separ))
   taxize_rank_ref<-taxize_rank_ref[1:which(taxize_rank_ref$rankname=="form"),]
   orderedRanks=taxize_rank_ref$rankname
-  if(sum(sapply(obligatory,length)))
+  if(length(obligatory))
   {
     stopifnot(names(obligatory) %in% names(tabGbif) & methods::is(obligatory,"character"))
     matObliGbif<-as.matrix(tabGbif[names(obligatory)])
     matchOblig<-!is.na(match(split(matObliGbif,row(matObliGbif)),list(unname(obligatory))))
-  }
+  }else{matchOblig<-rep(T,nrow(tabGbif))}
   rankOk <- (tabGbif$rank %in% rank)
   # case: perfect match without any discrepancy nor problematic taxonomic information
   minimumRequired<-which(matchOblig & rankOk)
@@ -798,3 +813,35 @@ checkGbif<-function(taxo,rankCheck,higherRankCheck=higherRanks(taxo,rankCheck),m
   res$suggested<-suggested
   return(res)
 }
+
+#' Suppress suggested corrections from a suggested correction table
+#'
+#' @param suggested suggested correction table (as returned by the `check*` function)
+#' @param id_suggest id_suggest to suppress from a suggested correction table
+#' @param row id of rows to suppress from a suggested correction table
+#'
+#' @returns a new suggested correction table
+#' @export
+suppressSuggest<-function(suggested, id_suggest, row)
+{
+  if(!methods::is(suggested,"data.frame"))
+  {
+    if("suggested" %in% names(suggested))
+    { tabSuggested <- suggested$suggested
+      format_suggested<-"LIST"
+    }else{stop("I do not understand the structure of the suggested object")}
+  }else{
+      format_suggested<-"TAB"
+      tabSuggested<-suggested
+  }
+  tabSuggested<-tabSuggested[!tabSuggested$row %in% row & !tabSuggested$id_suggest%in%id_suggest]
+  if(format_suggested=="LIST"){suggested$suggested<-tabSuggested}
+  if(format_suggested=="TAB"){suggested<-tabSuggested}
+  return(suggested)
+}
+
+# TODO: create the function to export suggestions in excel
+
+# TODO: create the function to merge suggestions
+
+# TODO: create the function to create a full automatized diagnostic

@@ -193,3 +193,83 @@ kable(head(showUnicityCodetax(suggested_taxoCodeTDF,"suggested")))
 ``` r
 taxoTDF<-correct(taxoTDF, suggested_taxoCodeTDF)
 ```
+
+## Using the gbif backbone to get suggested corrections
+
+``` r
+suggested_species_gbif_BST<-checkGbif(taxoBST,rankCheck="species")
+```
+
+    Searching for 689 taxa in the GBIF Backbone
+    ...
+
+    done
+
+    done
+    Analysing GBIF Backbone information
+
+    610 taxa are found without any modification needed
+
+    13 taxa are found with suggested orthographic changes
+
+    54 taxa are suggested synonyms
+
+    16 taxa are found with suggested higher rank changes
+
+    1 taxa were not found
+
+``` r
+kable(head(suggested_species_gbif_BST$suggested))
+```
+
+|  | row | code | plot | family | genus | specificEpithet | type | suggest_family | suggest_genus | suggest_specificEpithet | gbifid |
+|:---|---:|:---|:---|:---|:---|:---|:---|:---|:---|:---|---:|
+| 8 | 8 | Cochviti | AltoSanJorgeInicial | Bixaceae | Cochlospermum | vitifolium | exactMatch_changeHigherRanks | Cochlospermaceae | Cochlospermum | vitifolium | 2874865 |
+| 9 | 9 | Cordbico | AltoSanJorgeInicial | Boraginaceae | Cordia | bicolor | exactMatch_changeHigherRanks | Cordiaceae | Cordia | bicolor | 5660135 |
+| 18 | 28 | Myrcfall | AltoSanJorgeInicial | Myrtaceae | Myrcia | fallax | exactMatch_synonym | Myrtaceae | Myrcia | splendens | 3174691 |
+| 21 | 32 | Schemoro | AltoSanJorgeInicial | Araliaceae | Schefflera | morototoni | exactMatch_synonym | Araliaceae | Didymopanax | morototoni | 3038523 |
+| 23 | 35 | Tremmicr | AltoSanJorgeInicial | Cannabaceae | Trema | micrantha | fuzzyMatch | Cannabaceae | Trema | micranthum | 2984501 |
+| 24 | 36 | Tremmicr | AltoSanJorgeInicial | Cannabaceae | Trema | micrantha | fuzzyMatch | Cannabaceae | Trema | micranthum | 2984501 |
+
+``` r
+taxoBST<-correct(taxoBST,suggested_species_gbif_BST)
+```
+
+``` r
+suggested_genus_gbif_BST<-checkGbif(taxoBST,rankCheck="genus")
+kable(head(suggested_genus_gbif_BST$suggested))
+taxoBST<-correct(taxoBST,suggested_genus_gbif_BST)
+```
+
+``` r
+suggested_family_gbif_BST<-checkGbif(taxoBST,rankCheck="family")
+```
+
+    Searching for 22 taxa in the GBIF Backbone
+    ...
+
+    done
+
+    done
+    Analysing GBIF Backbone information
+
+    22 taxa are found without any modification needed
+
+    0 taxa are found with suggested orthographic changes
+
+    0 taxa are suggested synonyms
+
+    0 taxa are found with suggested higher rank changes
+
+    0 taxa were not found
+
+``` r
+kable(head(suggested_family_gbif_BST$suggested))
+```
+
+| row | code | plot | family | type | suggest_family | gbifid |
+|----:|:-----|:-----|:-------|:-----|:---------------|-------:|
+
+``` r
+taxoBST<-correct(taxoBST,suggested_family_gbif_BST)
+```

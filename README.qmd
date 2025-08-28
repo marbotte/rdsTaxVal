@@ -110,4 +110,22 @@ kable(head(showUnicityCodetax(suggested_taxoCodeTDF,"suggested")))
 taxoTDF<-correct(taxoTDF, suggested_taxoCodeTDF)
 ```
 
+## Using the gbif backbone to get suggested corrections
 
+```{r}
+suggested_species_gbif_BST<-checkGbif(taxoBST,rankCheck="species")
+kable(head(suggested_species_gbif_BST$suggested))
+taxoBST<-correct(taxoBST,suggested_species_gbif_BST)
+```
+
+```{r}
+suggested_genus_gbif_BST<-checkGbif(taxoBST,rankCheck="genus")
+kable(head(suggested_genus_gbif_BST$suggested))
+taxoBST<-correct(taxoBST,suggested_genus_gbif_BST)
+```
+
+```{r}
+suggested_family_gbif_BST<-checkGbif(taxoBST,rankCheck="family")
+kable(head(suggested_family_gbif_BST$suggested))
+taxoBST<-correct(taxoBST,suggested_family_gbif_BST)
+```
