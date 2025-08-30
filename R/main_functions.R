@@ -182,7 +182,8 @@ correct<-function(taxo, suggested)
     match_mat <- cbind(match(colsToAdd, taxize_rank_ref$rankname), match(colsToAdd, gsub(" ", "_", taxize_rank_ref$rankname)), match(colsToAdd, gsub("[[:space:]]","_",paste0(taxize_rank_ref$rankname,"epithet",sep="_"))))
     taxizeMatch_m <- apply(match_mat, 1, function(x)
       {
-        res=stats::na.omit(x)
+        res=unique(stats::na.omit(x))
+        stopifnot(length(res)<=1)
         if(length(res)==0){res<-NA}
         return(res)
       })
@@ -449,7 +450,10 @@ checkUnicityCodetax <- function(taxo, noMajority=c("skip","takeFirst","stop"))
       return(cbind(tab1,row2))
     },vs=varSuggest))
     suggested<-data.frame(id_suggest=seq(1,nrow(suggested),length.out=nrow(suggested)),suggested[names(suggested)!="suggestedCase"])
-  return(list(problems=problems,suggested=suggested))
+    failed<-Reduce(rbind,problems)
+    failed<-failed[!failed[attr(taxo,"taxoCode") %in% suggested[attr(taxo,"taxoCode")]],]
+
+  return(list(problems=problems, failed=failed, suggested=suggested))
   }
   cn<-c("row",variablesToShow,paste("suggest",varSuggest,sep="_"))
   names(cn)<-cn
@@ -742,7 +746,7 @@ checkGbif<-function(taxo,rankCheck,higherRankCheck=higherRanks(taxo,rankCheck),m
 
   # analysing gbif results
   if(messagesOther)
-  {message("done\nAnalysing GBIF Backbone information")}
+  {message("Analysing GBIF Backbone information")}
   gbifAnalysed<-mapply(analyseGbifTable,searched=searchedTax, tabGbif=resGbifTax,expected=HR, MoreArgs=list(rank=rankCheck, obligatory= filters),SIMPLIFY = F)
   diagnostic<-table(sapply(gbifAnalysed,function(x)x$type))
   if(messagesOther)
@@ -848,8 +852,344 @@ suppressSuggest<-function(suggested, id_suggest, row)
   return(suggested)
 }
 
-# TODO: create the function to export suggestions in excel
+#' Export a list of table into a multi
+#'
+#' @param file path and name of the excel file
+#' @param lVar either a list of table or a vector of names of tables that will be exported as sheets in the excel files
+#'
+#' @returns This function does not really return
+#' @export
+#'
+saveInExcel<-function(file,lVar)
+{
+  if(!is.list(lVar)){
+    listVar<-mget(lVar,envir = .GlobalEnv)
+  }else{listVar<-lVar}
+  wb <- openxlx::createWorkbook()
+  for(i in 1:length(listVar))
+  {
+    openxlsx::addWorksheet(wb, sheetName = names(listVar)[i])
+    hasRownames <- !all(grepl("^[0-9]*$",rownames(listVar[[i]])))
+    openxlsx::writeDataTable(wb, sheet =names(listVar)[i], listVar[[i]],rowNames = hasRownames)
+    nCols<-ifelse(hasRownames,ncol(listVar[[i]]), ncol(listVar[[i]]))
+    openxlsx::setColWidths(wb, sheet =names(listVar)[i],cols = 1:nCols, widths = 'auto')
+  }
+  openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+}
+
+
+# taxo<-taxoBST_initial
+# lSuggest<-c(
+#   "suggested_spaces_BST",
+#   "suggested_undetermined_BST",
+#   "suggested_taxoCodeBST",
+#   "suggested_unicity_familyBST",
+#   "suggested_species_gbif_BST",
+#   "suggested_genus_gbif_BST",
+#   "suggested_family_gbif_BST"
+#   )
 
 # TODO: create the function to merge suggestions
+# Note: the function does not check whether if all suggestions were applied to the object. This only make sense if every suggestion was made from the corrected version of the previous one
+#' Merge various suggested correction tables into a simpler, unique one
+#'
+#' @param taxo taxonomic table of class taxo_oneTable (must be the initial table before applying the results)
+#' @param lSuggest either a named list with the ordered suggested correction tables (used as recursive corrections) or the ordered names of the correction table objects in the global environment
+#' @param descrSuggest description for each of the suggested correction table that will be used in the final suggested correction table (if null the function will use lSuggest to create descriptions)
+#' @param parts parts of the original taxonomic table that will be shown as reference (see `extract`)
+#' @param onlyRanks taxonomic ranks of the original taxonomic table that will be shown as reference
+#' @param onlyQualifiers taxonomic qualifiers of the original taxonomic table that will be shown as reference
+#' @param keepSuggestCol columns from the suggested correction table that should be kept in the final suggested correction table
+#' @param returnEachSuggest if true all the suggested tables are included in the returned list
+#' @param returnFailed if true the tables of failed suggested correction cases are included in the returned list
+#' @param returnAnalysedGbif if true the analysed gbif objects are included in the returned list
+#'
+#' @returns a list with the suggested final tables and other objects depending on the arguments given
+#' @export
+#'
+mergeSuggest<-function(taxo, lSuggest, descrSuggest=NULL,parts=c("taxoCode","plot","taxonRanks","morphoQualifiers","comments"),onlyRanks=NULL ,onlyQualifiers=NULL ,  keepSuggestCol="gbifid", returnEachSuggest=F, returnFailed=T, returnAnalysedGbif=T)
+{
+  stopifnot(methods::is(taxo,"taxo_oneTab"))
+  if(!is.list(lSuggest)){
+    listSuggest<-mget(lSuggest, envir = .GlobalEnv)
+    if(is.null(descrSuggest)) {descrSuggest<-lSuggest}
+  }else{
+    listSuggest<-lSuggest
+    if(is.null(descrSuggest))
+    {
+      if(is.null(names(lSuggest)) || any(names(lSuggest)==""))
+      {stop("You need to give descrSuggest for the types of suggestions")}
+      descrSuggest<-names(lSuggest)
+    }
+  }
+  stopifnot(is.character(descrSuggest) && length(descrSuggest)==length(listSuggest))
+  listSuggested<-lapply(listSuggest, function(x)
+    {
+      if(is.data.frame(x)) {return(x)}
+      stopifnot("suggested" %in% names(x))
+      return(x$suggested)
+    })
+  tabSuggestedTypes<-data.frame(Reduce(rbind,lapply(listSuggested,function(x)
+    data.frame(row=x[,"row",drop=F],
+               type=if("type"%in%colnames(x)) {x$type} else {rep(NA, nrow(x))}
+               )
+    )),description=rep(descrSuggest,sapply(listSuggested,nrow)))
+  suggestDescription<-paste0(tabSuggestedTypes$description,ifelse(is.na(tabSuggestedTypes$type),rep("",nrow(tabSuggestedTypes)),paste0(" (",tabSuggestedTypes$type,")")))
+  concernedRows<-sort(unique(tabSuggestedTypes$row))
+  mergeSuggestDescription <- tapply(X=suggestDescription, INDEX=tabSuggestedTypes$row, FUN=paste,collapse=" -> ")
+  mergeSuggestDescription<-mergeSuggestDescription[match(as.numeric(names(mergeSuggestDescription)),concernedRows)]
+  rawTab<-extract(taxo, parts=parts,onlyRanks=NULL ,onlyQualifiers=NULL)[concernedRows,]
+  getSuggestColumn<-lapply(listSuggested[sapply(listSuggested,nrow)>0], function(x)colnames(x)[grep("suggest_",colnames(x))])
+  colSuggest<-c(unique(unlist(getSuggestColumn[order(sapply(getSuggestColumn,length),decreasing = T)])),keepSuggestCol)
+  tabSuggest<-as.data.frame(matrix(nrow=length(concernedRows),ncol=length(colSuggest),dimnames=list(concernedRows,colSuggest)))
+  for(i in 1:length(listSuggested))
+  {
+    cur<-listSuggested[[i]]
+    if(nrow(cur)==0) {next}
+    curFiltered<-cur[,colnames(cur)%in%colSuggest,drop=F]
+    ROW<-as.numeric(row(curFiltered))
+    COL<-as.numeric(col(curFiltered))
+    tabSuggest[cbind(row=match(cur$row,concernedRows)[ROW], col=match(colnames(curFiltered),colSuggest)[COL])]<-curFiltered[cbind(row=ROW,col=COL)]
+  }
+  res<-list()
+  namesSuggestedElements<-unique(unlist(lapply(listSuggest[!sapply(listSuggest,is.data.frame)],names)))
+  if(returnAnalysedGbif & any(namesSuggestedElements=="analysedGbif"))
+  {
+    mergedAnalysedGbif<-Reduce(c,lapply(listSuggest[!sapply(listSuggest,is.data.frame)],function(x)return(x$analysedGbif)))
+    res$analysedGbif<-mergedAnalysedGbif
+  }
+  if(returnEachSuggest)
+  {
+    names(listSuggested)<-paste("suggested",names(listSuggested),sep="_")
+    res<-c(res,listSuggested)
+  }
+  if(returnFailed & any(namesSuggestedElements=="failed"))
+  {
+    w<-which(!sapply(listSuggest,is.data.frame) & sapply(listSuggest,function(x)"failed" %in% names(x)))
+    listFailed<-lapply(listSuggest[w],function(x)return(x$failed))
+    names(listFailed)<-paste("failed",names(listFailed),sep="_")
+    res<-c(res,listFailed)
+    # failedRows<-Reduce(c,lapply(listSuggest[w],function(x)x$failed$row))
+    # failedDescription<-rep(descrSuggest[w],sapply(listSuggest[w],function(x)nrow(x$failed)))
+    # mergeFailedDescription <- tapply(failedDescription, failedRows, paste,collapse=" -> ")
+    # res$failed
+  }
+  res$suggested<-data.frame(id_suggest=seq(1,nrow(tabSuggest),length.out=nrow(tabSuggest)),
+                            row=concernedRows,
+                            suggestDescription=mergeSuggestDescription,
+                            rawTab,
+                            tabSuggest)
+  return(res)
+
+}
+#TODO: create the internal function message that will transform %arg1% in a message to the value corresponding to the value of the element of listArgs with the name "arg1"
+replaceInMessage<-function(message,listArgs)
+{
+  if(length(listArgs)>0)
+  {
+    listArgs<-listArgs[sapply(listArgs,function(x)length(x)==1 && is.character(x))]
+    for(i in seq(1,length(listArgs),length.out=length(listArgs)))
+    {
+      message<-gsub(paste0("%",names(listArgs)[i],"%"),listArgs[[i]],message)
+    }
+  }
+  if(grepl("%[^ ]+%",message)){warning("One of the parameters of the message was not found:", message)}
+  return(message)
+}
 
 # TODO: create the function to create a full automatized diagnostic
+#' Title
+#'
+#' @param taxo TODO: document
+#' @param checks TODO: document
+#' @param description TODO: document
+#' @param argsCheckFunction TODO: document
+#' @param ... TODO: document
+#'
+#' @returns TODO: document
+#' @export
+#'
+#' @examples
+fullTaxonomicDiagnostic <- function(taxo, checks = c("spaces", "undeterminedQualifiers","unicityInSuperiorRanks", "unicityCodeTax", "gbif"), description= c(spaces="cleaning spaces character", undeterminedQualifiers="misplaced qualifiers for undetermined taxa", unicityInSuperiorRanks="unicity of %rank% in %superior%", unicityCodeTax="checking for unicity of taxonomic information associated with taxonomic code", gbif="Comparing %rankCheck% information with gbif backbone"), argsCheckFunction=list(),...)
+{
+  stopifnot(methods::is(taxo,"taxo_oneTab"))
+  corrected <- taxo
+  namesCheck<-c("spaces", "undeterminedQualifiers", "unicityInSuperiorRanks", "unicityCodeTax", "gbif")
+  checks<-match.arg(checks, choices=namesCheck, several.ok = T)
+  if(!is.null(names(description)) && all(names(description)%in%namesCheck))
+  {
+    description=description[checks]
+  }
+  stopifnot(length(description) == length(checks))
+  suggestedList<-list()
+  descrSuggest<-character()
+  for(i in 1:length(checks))
+  {
+    cur_check<-checks[i]
+    FUN_name <- c(spaces="checkSpace", undeterminedQualifiers="checkUndetermited", unicityInSuperiorRanks="checkUnicityRankSup", unicityCodeTax="checkUnicityCodetax", gbif="checkGbif")[cur_check]
+    args_names<-names(formals(FUN_name))
+    args <- argsCheckFunction[names(argsCheckFunction) %in% paste(cur_check, args_names,sep="__")]
+    names(args)<-gsub(paste0(cur_check,"__"),"",names(args))
+    args<-c(args, argsCheckFunction[names(argsCheckFunction) %in% args_names & !argsCheckFunction %in% names(args)])
+    #some functions will have multiples runs with different set of arguments (mostly due to needing calling it at various taxonomic ranks)
+    if(cur_check=="unicityInSuperiorRanks")
+    {
+      #The lower rank to start by is the is the lower rank which is not epithetized AND is higher or equal than the lower rank really represented
+      realRanks<-taxoRanks(corrected)
+      ATTR_TR<-attr(corrected,"taxonRanks")
+      nbByRank<-table(realRanks)
+      nbByRank<-nbByRank[names(nbByRank)!="higher"]
+      lowerRepresentedRank<-max(which(nbByRank>0))
+      notEpithetized<-which(!ATTR_TR$epithetized)
+      startWith<-max(notEpithetized[notEpithetized<lowerRepresentedRank])
+      if(startWith>=2)
+      {
+        addArgs<-lapply(startWith:2,function(x,att)return(list(rank=att$rank[x],superior=att$rank[x-1])),att=ATTR_TR)
+        listArgs<-lapply(addArgs,append,args)
+        for(a in listArgs)
+        {
+          name_suggestedList<-paste("step",i,cur_check,a$rank,a$superior,sep="_")
+          descrSuggest[name_suggestedList]<-replaceInMessage(description[cur_check],a)
+          message(descrSuggest[name_suggestedList])
+          suggestedList[[name_suggestedList]]<-do.call(FUN_name,args=c(list(taxo=corrected),a))
+          corrected<-correct(corrected,suggestedList[[name_suggestedList]])
+        }
+      }else
+      {next}
+    }
+    if(cur_check=="gbif")
+    {
+      realRanks<-levels(droplevels(taxoRanks(corrected)))
+      realRanks<-realRanks[realRanks!="higher"]
+      realRanks<-realRanks[length(realRanks):1]
+      listArgs<-lapply(lapply(realRanks,function(x)list(rankCheck=x)),append,args)
+      for(a in listArgs)
+      {
+          name_suggestedList<-paste("step",i,cur_check,a$rankCheck,sep="_")
+          descrSuggest[name_suggestedList]<-replaceInMessage(description[cur_check],a)
+          message(descrSuggest[name_suggestedList])
+          suggestedList[[name_suggestedList]]<-do.call(FUN_name,args=c(list(taxo=corrected),a))
+          corrected<-correct(corrected,suggestedList[[name_suggestedList]])
+      }
+    }
+    if(cur_check %in% c("spaces", "undeterminedQualifiers", "unicityCodeTax"))
+    {
+      name_suggestedList<-paste("step",i,cur_check,sep="_")
+      descrSuggest[name_suggestedList]<-replaceInMessage(description[cur_check],args)
+      message(descrSuggest[name_suggestedList])
+      suggestedList[[name_suggestedList]]<-do.call(FUN_name,args=c(list(taxo=corrected),args))
+      corrected<-correct(corrected,suggestedList[[name_suggestedList]])
+
+    }
+  }
+  #return(list(suggestedList=suggestedList,descrSuggest=descrSuggest))
+  return(mergeSuggest(taxo,lSuggest = suggestedList,descrSuggest = descrSuggest,...))
+}
+
+#' In the analysed Gbif object for one taxon add the taxon to the table of classification and return the classification
+#'
+#' @param resAnGbif an analysed gbif object
+#'
+#' @returns a classification table
+#' @export
+#'
+#' @examples
+addCurrentTaxoInHigherRanks<-function(resAnGbif)
+{
+  if(resAnGbif$type=="Failed"|nrow(resAnGbif$higherRanks)==0){return(data.frame(rank=character(),canonicalname=character(),gbifid=numeric(),parent_gbifid=numeric()))}
+  res<-resAnGbif$higherRanks
+  res<-rbind(res,
+             data.frame(rank=resAnGbif$finalRank,canonicalname=resAnGbif$canonicalname,gbifid=resAnGbif$gbifid,parent_gbifid=resAnGbif$higherRanks$gbifid[nrow(resAnGbif$higherRanks)]))
+  return(res)
+}
+
+#' extract all the unique classification table for all the taxa searched in the gbif backbone
+#'
+#' @param analysedGbif object extracted from the searches on GBIF and their analyses
+#'
+#' @returns A unique data.frame of classification
+#' @export
+#'
+#' @examples
+extractCompleteTaxo<-function(analysedGbif)
+{
+  res<-unique(Reduce(rbind,lapply(analysedGbif,addCurrentTaxoInHigherRanks)))
+  stopifnot(!duplicated(res$gbifid))
+  stopifnot(!duplicated(res$canonicalname))
+  return(res)
+}
+
+#' Get matrices of gbif backbone ids and names from a complete gbif classification table
+#'
+#' @param resCompleteTaxo obtained from `extractCompleteTaxo`
+#' @param rank lower taxonomic rank of the table
+#'
+#' @returns a list with 2 matrices: one of gbif backbone ids, one of canonical names
+#' @export
+#'
+#' @examples
+tabTaxoFromRank<-function(resCompleteTaxo,rank=NA)
+{
+  separ<-strsplit(taxize::rank_ref$ranks,",")
+  taxize_rank_ref<-data.frame(rankid=rep(as.integer(taxize::rank_ref$rankid),sapply(separ,length)),
+                              rankname=unlist(separ))
+  taxize_rank_ref<-taxize_rank_ref[1:which(taxize_rank_ref$rankname=="form"),]
+  stopifnot(resCompleteTaxo$rank%in%taxize_rank_ref$rankname)
+  allRanks<-taxize_rank_ref$rankname[taxize_rank_ref$rankname%in%resCompleteTaxo$rank]
+  if(is.na(rank)){rank<-allRanks[length(allRanks)]}
+  #baseRank_names<-resCompleteTaxo$canonicalname[resCompleteTaxo]
+  matId<-matName<-matrix(nrow=sum(resCompleteTaxo$rank==rank),ncol=length(allRanks),dimnames=list(resCompleteTaxo$gbifid[resCompleteTaxo$rank==rank],allRanks))
+
+  baseIdKeep<-baseId<-curId<-resCompleteTaxo$gbifid[resCompleteTaxo$rank==rank]
+  parentId<-resCompleteTaxo$parent_gbifid[resCompleteTaxo$rank==rank]
+  matId[cbind(row=match(baseId,baseIdKeep),col=match(resCompleteTaxo$rank[match(curId,resCompleteTaxo$gbifid)],colnames(matId)))]<-resCompleteTaxo$gbifid[match(curId,resCompleteTaxo$gbifid)]
+  matName[cbind(row=match(baseId,baseIdKeep),col=match(resCompleteTaxo$rank[match(curId,resCompleteTaxo$gbifid)],colnames(matId)))]<-resCompleteTaxo$canonicalname[match(curId,resCompleteTaxo$gbifid)]
+  w<-is.na(parentId)
+  curId<-parentId[!w]
+  baseId<-baseId[!w]
+  ct<-0
+  while(length(curId))
+  {
+    parentId<-resCompleteTaxo$parent_gbifid[match(curId,resCompleteTaxo$gbifid)]
+    ct<-ct+1
+    matId[cbind(row=match(baseId,baseIdKeep),col=match(resCompleteTaxo$rank[match(curId,resCompleteTaxo$gbifid)],colnames(matId)))]<-resCompleteTaxo$gbifid[match(curId,resCompleteTaxo$gbifid)]
+    matName[cbind(row=match(baseId,baseIdKeep),col=match(resCompleteTaxo$rank[match(curId,resCompleteTaxo$gbifid)],colnames(matId)))]<-resCompleteTaxo$canonicalname[match(curId,resCompleteTaxo$gbifid)]
+  w<-is.na(parentId)
+  curId<-parentId[!w]
+  baseId<-baseId[!w]
+  }
+  return(list(names=matName,gbifid=matId))
+}
+
+#' Add Higher ranks to a taxonomical table
+#'
+#' @param taxo taxonomic table (class taxo_oneTab)
+#' @param analysedGbif result of an analysed gbif backbone search
+#' @param ranks ranks to add, if NULL, determined automatically
+#' @param mergeOn which rank do we use to merge the current table with a more complete taxonomical classification table, if NA, the highest rank of taxo is used
+#'
+#' @returns a taxonomical table with the new taxonomical ranks
+#' @export
+#'
+#' @examples
+addHigherRanks<-function(taxo,analysedGbif,ranks=NULL,mergeOn=NA)
+{
+  if(is.na(mergeOn)){
+    mergeOn<-attr(taxo,"taxonRanks")$rank[1]
+  }
+  completeTaxo<-extractCompleteTaxo(analysedGbif)
+  tabTaxo<-tabTaxoFromRank(completeTaxo,rank=mergeOn)
+  if(all(is.null(ranks)))
+    {ranks<-colnames(tabTaxo$gbifid)}else
+    {ranks<-colnames(tabTaxo)[colnames(tabTaxo$gbifid) %in% ranks]}
+  ref<-getRank(taxo,mergeOn)
+  m<-match(ref,tabTaxo$names[,mergeOn])
+  suggest<-as.data.frame(tabTaxo$names[m[!is.na(m)],which(!colnames(tabTaxo$names)%in%attr(taxo,"taxonRanks")$rank)])
+  colnames(suggest)<-paste("suggest",colnames(suggest),sep="_")
+  suggested<-data.frame(
+    row=which(!is.na(m)),
+    suggest
+    )
+  taxo<-correct(taxo,suggested)
+}
+

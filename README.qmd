@@ -46,8 +46,8 @@ taxoTDF <- new_taxo_oneTab(rdsTDF$taxonomy, currentFormat = "oneTable", taxonRan
 
 taxoBST[arrayInd(which(as.matrix(taxoBST) %in% c("","N/D","NA","N/A")), .dim=dim(taxoBST), useNames = T)] <- NA
 taxoTDF[arrayInd(which(as.matrix(taxoTDF) %in% c("","N/D","NA","N/A")), .dim=dim(taxoTDF), useNames = T)] <- NA
-
-
+taxoBST_initial<-taxoBST
+taxoTDF_initial<-taxoTDF
 ```
 
 ## Manage spaces in the taxonomy table
