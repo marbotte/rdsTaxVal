@@ -5,8 +5,6 @@
 \title{Check whether taxonomic codes are alway associated with the same taxonomic information and suggests corrections}
 \usage{
 checkUnicityCodetax(taxo, noMajority = c("skip", "takeFirst", "stop"))
-
-checkUnicityCodetax(taxo, noMajority = c("skip", "takeFirst", "stop"))
 }
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
@@ -14,7 +12,5 @@ checkUnicityCodetax(taxo, noMajority = c("skip", "takeFirst", "stop"))
 \item{noMajority}{TODO: document}
 }
 \description{
-Check whether taxonomic codes are alway associated with the same taxonomic information and suggests corrections
-
 Check whether taxonomic codes are alway associated with the same taxonomic information and suggests corrections
 }

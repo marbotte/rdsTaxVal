@@ -5,8 +5,6 @@
 \title{Extract epithets from full name taxa}
 \usage{
 extractEpithet(taxon, higherTaxon = NULL)
-
-extractEpithet(taxon, higherTaxon = NULL)
 }
 \arguments{
 \item{taxon}{TODO: document}
@@ -14,7 +12,5 @@ extractEpithet(taxon, higherTaxon = NULL)
 \item{higherTaxon}{TODO: document}
 }
 \description{
-Extract epithets from full name taxa
-
 Extract epithets from full name taxa
 }

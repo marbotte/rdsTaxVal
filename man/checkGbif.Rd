@@ -18,21 +18,6 @@ checkGbif(
   returnFailed = "Failed" \%in\% excludeFromSuggests,
   returnExactMatches = F
 )
-
-checkGbif(
-  taxo,
-  rankCheck,
-  higherRankCheck = higherRanks(taxo, rankCheck),
-  messagesGbif = F,
-  messagesOther = T,
-  filters = c(kingdom = "Plantae"),
-  excludeFromSuggests = c("exactMatch", "Failed"),
-  epithetizeSuggests = T,
-  returnGbifRes = F,
-  returnAnalysedGbif = !returnGbifRes,
-  returnFailed = "Failed" \%in\% excludeFromSuggests,
-  returnExactMatches = F
-)
 }
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
@@ -60,7 +45,5 @@ checkGbif(
 \item{returnExactMatches}{TODO: document}
 }
 \description{
-Check in the gbif backbone whether taxa from a particular rank in a table are erroneous and suggests corrections
-
 Check in the gbif backbone whether taxa from a particular rank in a table are erroneous and suggests corrections
 }

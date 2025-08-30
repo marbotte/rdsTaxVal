@@ -997,36 +997,11 @@ replaceInMessage<-function(message,listArgs)
   return(message)
 }
 
-# TODO: create the function to create a full automatized diagnostic
-#' Title
-#'
-#' @param taxo TODO: document
-#' @param checks TODO: document
-#' @param description TODO: document
-#' @param argsCheckFunction TODO: document
-#' @param ... TODO: document
-#'
-#' @returns TODO: document
-#' @export
-#'
-# getRank <- function(taxo, rank)
-# {
-#   stopifnot(methods::is(taxo,"taxo_oneTab"))
-#   ATTR_TR <- attr(taxo, "taxonRanks")
-#   stopifnot(rank %in% ATTR_TR$rank)
-#   epi <- ATTR_TR[ATTR_TR$rank==rank,"epithetized"]
-#   if(!epi)
-#   {return(as.character(taxo[,ATTR_TR$column[ATTR_TR$rank==rank],drop=T]))}
-#   if(rank=="species") {otherRanks<-"genus"} else {otherRanks<-c("genus", "species")}
-#   tab <- extract(taxo,parts="taxonRanks",onlyRanks = c(otherRanks,rank))
-#   res <- do.call(paste, tab)
-#   res[unique(which(is.na(tab),arr.ind=T)[,"row"])]<-NA
-#   return(as.character(res))
-# }
 
 
 # TODO: create the function to create a full automatized diagnostic
-#' Title
+
+#' Provide a full taxonomic diagnostic and its suggested corrections
 #'
 #' @param taxo TODO: document
 #' @param checks TODO: document
@@ -1216,9 +1191,6 @@ addHigherRanks<-function(taxo,analysedGbif,ranks=NULL,mergeOn=NA)
   taxo<-correct(taxo,suggested)
 }
 
-=======
-#' @examples
->>>>>>> 9df1862c33ddebccf4ae3f9f1cc81710cb691746
 fullTaxonomicDiagnostic <- function(taxo, checks = c("spaces", "undeterminedQualifiers","unicityInSuperiorRanks", "unicityCodeTax", "gbif"), description= c(spaces="cleaning spaces character", undeterminedQualifiers="misplaced qualifiers for undetermined taxa", unicityInSuperiorRanks="unicity of %rank% in %superior%", unicityCodeTax="checking for unicity of taxonomic information associated with taxonomic code", gbif="Comparing %rankCheck% information with gbif backbone"), argsCheckFunction=list(),...)
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))

@@ -16,19 +16,6 @@ mergeSuggest(
   returnFailed = T,
   returnAnalysedGbif = T
 )
-
-mergeSuggest(
-  taxo,
-  lSuggest,
-  descrSuggest = NULL,
-  parts = c("taxoCode", "plot", "taxonRanks", "morphoQualifiers", "comments"),
-  onlyRanks = NULL,
-  onlyQualifiers = NULL,
-  keepSuggestCol = "gbifid",
-  returnEachSuggest = F,
-  returnFailed = T,
-  returnAnalysedGbif = T
-)
 }
 \arguments{
 \item{taxo}{taxonomic table of class taxo_oneTable (must be the initial table before applying the results)}
@@ -53,11 +40,7 @@ mergeSuggest(
 }
 \value{
 a list with the suggested final tables and other objects depending on the arguments given
-
-a list with the suggested final tables and other objects depending on the arguments given
 }
 \description{
-Merge various suggested correction tables into a simpler, unique one
-
 Merge various suggested correction tables into a simpler, unique one
 }

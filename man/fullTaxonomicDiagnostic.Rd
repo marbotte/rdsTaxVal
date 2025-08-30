@@ -2,7 +2,7 @@
 % Please edit documentation in R/main_functions.R
 \name{fullTaxonomicDiagnostic}
 \alias{fullTaxonomicDiagnostic}
-\title{Title}
+\title{Provide a full taxonomic diagnostic and its suggested corrections}
 \usage{
 fullTaxonomicDiagnostic(
   taxo,
@@ -32,5 +32,5 @@ fullTaxonomicDiagnostic(
 TODO: document
 }
 \description{
-Title
+Provide a full taxonomic diagnostic and its suggested corrections
 }

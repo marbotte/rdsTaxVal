@@ -5,8 +5,6 @@
 \title{Export a list of table into a multi}
 \usage{
 saveInExcel(file, lVar)
-
-saveInExcel(file, lVar)
 }
 \arguments{
 \item{file}{path and name of the excel file}
@@ -15,11 +13,7 @@ saveInExcel(file, lVar)
 }
 \value{
 This function does not really return
-
-This function does not really return
 }
 \description{
-Export a list of table into a multi
-
 Export a list of table into a multi
 }

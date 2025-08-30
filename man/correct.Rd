@@ -5,8 +5,6 @@
 \title{Correct a taxonomic table according to a table of suggested corrections}
 \usage{
 correct(taxo, suggested)
-
-correct(taxo, suggested)
 }
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
@@ -14,7 +12,5 @@ correct(taxo, suggested)
 \item{suggested}{TODO: document}
 }
 \description{
-Correct a taxonomic table according to a table of suggested corrections
-
 Correct a taxonomic table according to a table of suggested corrections
 }

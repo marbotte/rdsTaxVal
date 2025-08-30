@@ -10,13 +10,6 @@ checkSpace(
   show_ref = c(attr(taxo, "plot"), attr(taxo, "taxoCode")),
   show_space = "#"
 )
-
-checkSpace(
-  taxo,
-  parts = c("plot", "taxoCode", "taxonRanks", "morphoQualifiers"),
-  show_ref = c(attr(taxo, "plot"), attr(taxo, "taxoCode")),
-  show_space = "#"
-)
 }
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
@@ -28,7 +21,5 @@ checkSpace(
 \item{show_space}{TODO: document}
 }
 \description{
-Check for irregular spaces in a taxonomic table and suggest corrections
-
 Check for irregular spaces in a taxonomic table and suggest corrections
 }

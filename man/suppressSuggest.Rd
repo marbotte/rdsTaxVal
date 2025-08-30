@@ -5,8 +5,6 @@
 \title{Suppress suggested corrections from a suggested correction table}
 \usage{
 suppressSuggest(suggested, id_suggest, row)
-
-suppressSuggest(suggested, id_suggest, row)
 }
 \arguments{
 \item{suggested}{suggested correction table (as returned by the `check*` function)}
@@ -17,11 +15,7 @@ suppressSuggest(suggested, id_suggest, row)
 }
 \value{
 a new suggested correction table
-
-a new suggested correction table
 }
 \description{
-Suppress suggested corrections from a suggested correction table
-
 Suppress suggested corrections from a suggested correction table
 }

@@ -5,8 +5,6 @@
 \title{Determine which higher ranks can be found from a taxonomic table}
 \usage{
 higherRanks(taxo, rank, excludeEpithComponents = T)
-
-higherRanks(taxo, rank, excludeEpithComponents = T)
 }
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
@@ -16,7 +14,5 @@ higherRanks(taxo, rank, excludeEpithComponents = T)
 \item{excludeEpithComponents}{TODO: document}
 }
 \description{
-Determine which higher ranks can be found from a taxonomic table
-
 Determine which higher ranks can be found from a taxonomic table
 }
