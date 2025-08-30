@@ -5,10 +5,14 @@
 \title{Check for bad formatted undetermination qualifiers and suggest corrections}
 \usage{
 checkUndetermited(taxo)
+
+checkUndetermited(taxo)
 }
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
 }
 \description{
+Check for bad formatted undetermination qualifiers and suggest corrections
+
 Check for bad formatted undetermination qualifiers and suggest corrections
 }

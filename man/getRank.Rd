@@ -5,12 +5,27 @@
 \title{Get taxon information at a particular taxonomic rank from a taxonomic table}
 \usage{
 getRank(taxo, rank)
+
+getRank(taxo, rank)
 }
 \arguments{
-\item{taxo}{taxonomic table (of class taxo_oneTab)}
+\item{taxo}{TODO: document}
 
 \item{rank}{TODO: document}
+
+\item{checks}{TODO: document}
+
+\item{description}{TODO: document}
+
+\item{argsCheckFunction}{TODO: document}
+
+\item{...}{TODO: document}
+}
+\value{
+TODO: document
 }
 \description{
 Get taxon information at a particular taxonomic rank from a taxonomic table
+
+Title
 }

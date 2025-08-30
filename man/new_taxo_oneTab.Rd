@@ -22,7 +22,7 @@ new_taxo_oneTab(
 data.frame for each plot, or a single data.frame}
 
 \item{currentFormat}{describe the format of obj: "listPlot" for a list of
-plots and "oneTable" for a single}
+plots and "oneTable" for a single data.frame containing all the taxonomy}
 
 \item{taxonRanks_names}{named character vector (names:rank as defined in taxize, content name of the column)}
 

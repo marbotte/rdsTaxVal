@@ -12,6 +12,15 @@ analyseGbifTable(
   expected,
   returnGbifRes = T
 )
+
+analyseGbifTable(
+  searched,
+  tabGbif,
+  rank,
+  obligatory,
+  expected,
+  returnGbifRes = T
+)
 }
 \arguments{
 \item{searched}{TODO: document}
@@ -27,5 +36,7 @@ analyseGbifTable(
 \item{returnGbifRes}{TODO: document}
 }
 \description{
+Analyse a table obtained from a gbif backbone search
+
 Analyse a table obtained from a gbif backbone search
 }

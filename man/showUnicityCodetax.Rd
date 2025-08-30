@@ -9,6 +9,12 @@ showUnicityCodetax(
   type = c("code", "problems", "suggested"),
   code = NA
 )
+
+showUnicityCodetax(
+  resUnicityCodeTax,
+  type = c("code", "problems", "suggested"),
+  code = NA
+)
 }
 \arguments{
 \item{resUnicityCodeTax}{TODO: document}
@@ -18,5 +24,7 @@ showUnicityCodetax(
 \item{code}{TODO: document}
 }
 \description{
+Format and show results from the analysis of unicity of information associated with taxonomic codes
+
 Format and show results from the analysis of unicity of information associated with taxonomic codes
 }

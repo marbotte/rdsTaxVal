@@ -5,10 +5,14 @@
 \title{Extract the taxonomic ranks of taxa from a taxonomic table}
 \usage{
 taxoRanks(taxo)
+
+taxoRanks(taxo)
 }
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
 }
 \description{
+Extract the taxonomic ranks of taxa from a taxonomic table
+
 Extract the taxonomic ranks of taxa from a taxonomic table
 }

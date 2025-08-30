@@ -9,6 +9,12 @@ getSuggestsFromListGbif(
   ranks = c("family", "genus", "species", "subspecies", "variety"),
   exclude = c("exactMatch")
 )
+
+getSuggestsFromListGbif(
+  listAnalysedGbif,
+  ranks = c("family", "genus", "species", "subspecies", "variety"),
+  exclude = c("exactMatch")
+)
 }
 \arguments{
 \item{listAnalysedGbif}{TODO: document}
@@ -18,5 +24,7 @@ getSuggestsFromListGbif(
 \item{exclude}{TODO: document}
 }
 \description{
+Get suggested taxa from a list of analysed tables from Gbif backbone searches
+
 Get suggested taxa from a list of analysed tables from Gbif backbone searches
 }
