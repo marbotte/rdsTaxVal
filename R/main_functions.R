@@ -1053,17 +1053,16 @@ replaceInMessage<-function(message,listArgs)
 
 
 
-# TODO: create the function to create a full automatized diagnostic
 
 #' Provide a full taxonomic diagnostic and its suggested corrections
 #'
-#' @param taxo TODO: document
-#' @param checks TODO: document
-#' @param description TODO: document
-#' @param argsCheckFunction TODO: document
-#' @param ... TODO: document
+#' @param taxo taxonomic table (class taxo_oneTable)
+#' @param checks one or various elements to be checked, the different elements can be repeated and will be applied in the order they are entered here. Each element must be one of `"spaces"` (call `checkSPace`), `"undeterminedQualifiers"` (call `checkUndetermined`), `"unicityInSuperiorRanks"` (call `checkUnicityRankSup` for each taxonomical rank it makes sense),  `"unicityCodeTax"` (call `checkUnicityCodeTax`), `"gbif"` (call recursively `checkGbif` for each taxonomic rank which is represented in the table).
+#' @param description Description of each step in `checks`, note that word enclosed in `%%` will be replaced by the corresponfing argument in the function. This description will be used as a description in the merged suggested correction table and to write messages during the execution of the function. Note the best way to do it is to use a named character vector, with potential values of `checks` as names
+#' @param argsCheckFunction named list of parameters to pass to the individual functions (see `checks`) not that if one of the name is `checksType__arg`, it will be passed only to the function corresponding to `checkType`
+#' @param ... arguments to be passed to `mergeSuggest`
 #'
-#' @returns TODO: document
+#' @returns What is returned is the result of `mergeSuggest` for all the check functions which have been called
 #' @export
 #'
 fullTaxonomicDiagnostic <- function(taxo, checks = c("spaces", "undeterminedQualifiers","unicityInSuperiorRanks", "unicityCodeTax", "gbif"), description= c(spaces="cleaning space characters", undeterminedQualifiers="misplaced qualifiers for undetermined taxa", unicityInSuperiorRanks="unicity of %rank% in %superior%", unicityCodeTax="checking for unicity of taxonomic information associated with taxonomic code", gbif="Comparing %rankCheck% information with gbif backbone"), argsCheckFunction=list(),...)

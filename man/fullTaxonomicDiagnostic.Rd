@@ -8,7 +8,7 @@ fullTaxonomicDiagnostic(
   taxo,
   checks = c("spaces", "undeterminedQualifiers", "unicityInSuperiorRanks",
     "unicityCodeTax", "gbif"),
-  description = c(spaces = "cleaning spaces character", undeterminedQualifiers =
+  description = c(spaces = "cleaning space characters", undeterminedQualifiers =
     "misplaced qualifiers for undetermined taxa", unicityInSuperiorRanks =
     "unicity of \%rank\% in \%superior\%", unicityCodeTax =
     "checking for unicity of taxonomic information associated with taxonomic code", gbif
@@ -18,18 +18,18 @@ fullTaxonomicDiagnostic(
 )
 }
 \arguments{
-\item{taxo}{TODO: document}
+\item{taxo}{taxonomic table (class taxo_oneTable)}
 
-\item{checks}{TODO: document}
+\item{checks}{one or various elements to be checked, the different elements can be repeated and will be applied in the order they are entered here. Each element must be one of `"spaces"` (call `checkSPace`), `"undeterminedQualifiers"` (call `checkUndetermined`), `"unicityInSuperiorRanks"` (call `checkUnicityRankSup` for each taxonomical rank it makes sense),  `"unicityCodeTax"` (call `checkUnicityCodeTax`), `"gbif"` (call recursively `checkGbif` for each taxonomic rank which is represented in the table).}
 
-\item{description}{TODO: document}
+\item{description}{Description of each step in `checks`, note that word enclosed in `%%` will be replaced by the corresponfing argument in the function. This description will be used as a description in the merged suggested correction table and to write messages during the execution of the function. Note the best way to do it is to use a named character vector, with potential values of `checks` as names}
 
-\item{argsCheckFunction}{TODO: document}
+\item{argsCheckFunction}{named list of parameters to pass to the individual functions (see `checks`) not that if one of the name is `checksType__arg`, it will be passed only to the function corresponding to `checkType`}
 
-\item{...}{TODO: document}
+\item{...}{arguments to be passed to `mergeSuggest`}
 }
 \value{
-TODO: document
+What is returned is the result of `mergeSuggest` for all the check functions which have been called
 }
 \description{
 Provide a full taxonomic diagnostic and its suggested corrections

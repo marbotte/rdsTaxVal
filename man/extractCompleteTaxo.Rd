@@ -5,19 +5,13 @@
 \title{extract all the unique classification table for all the taxa searched in the gbif backbone}
 \usage{
 extractCompleteTaxo(analysedGbif)
-
-extractCompleteTaxo(analysedGbif)
 }
 \arguments{
 \item{analysedGbif}{object extracted from the searches on GBIF and their analyses}
 }
 \value{
 A unique data.frame of classification
-
-A unique data.frame of classification
 }
 \description{
-extract all the unique classification table for all the taxa searched in the gbif backbone
-
 extract all the unique classification table for all the taxa searched in the gbif backbone
 }

@@ -5,8 +5,6 @@
 \title{Get matrices of gbif backbone ids and names from a complete gbif classification table}
 \usage{
 tabTaxoFromRank(resCompleteTaxo, rank = NA)
-
-tabTaxoFromRank(resCompleteTaxo, rank = NA)
 }
 \arguments{
 \item{resCompleteTaxo}{obtained from `extractCompleteTaxo`}
@@ -15,11 +13,7 @@ tabTaxoFromRank(resCompleteTaxo, rank = NA)
 }
 \value{
 a list with 2 matrices: one of gbif backbone ids, one of canonical names
-
-a list with 2 matrices: one of gbif backbone ids, one of canonical names
 }
 \description{
-Get matrices of gbif backbone ids and names from a complete gbif classification table
-
 Get matrices of gbif backbone ids and names from a complete gbif classification table
 }

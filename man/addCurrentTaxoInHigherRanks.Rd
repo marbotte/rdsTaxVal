@@ -5,19 +5,13 @@
 \title{In the analysed Gbif object for one taxon add the taxon to the table of classification and return the classification}
 \usage{
 addCurrentTaxoInHigherRanks(resAnGbif)
-
-addCurrentTaxoInHigherRanks(resAnGbif)
 }
 \arguments{
 \item{resAnGbif}{an analysed gbif object}
 }
 \value{
 a classification table
-
-a classification table
 }
 \description{
-In the analysed Gbif object for one taxon add the taxon to the table of classification and return the classification
-
 In the analysed Gbif object for one taxon add the taxon to the table of classification and return the classification
 }

@@ -5,8 +5,6 @@
 \title{Add Higher ranks to a taxonomical table}
 \usage{
 addHigherRanks(taxo, analysedGbif, ranks = NULL, mergeOn = NA)
-
-addHigherRanks(taxo, analysedGbif, ranks = NULL, mergeOn = NA)
 }
 \arguments{
 \item{taxo}{taxonomic table (class taxo_oneTab)}
@@ -19,11 +17,7 @@ addHigherRanks(taxo, analysedGbif, ranks = NULL, mergeOn = NA)
 }
 \value{
 a taxonomical table with the new taxonomical ranks
-
-a taxonomical table with the new taxonomical ranks
 }
 \description{
-Add Higher ranks to a taxonomical table
-
 Add Higher ranks to a taxonomical table
 }
