@@ -856,8 +856,10 @@ suppressSuggest<-function(suggested, id_suggest, row)
 #'
 #' @param file path and name of the excel file
 #' @param lVar either a list of table or a vector of names of tables that will be exported as sheets in the excel files
+#' @param overwrite if the file exists, should it be overwritten?
+#' @param keepRownames Should the rownames be exported as a column (even though the argument is TRUE, it won't have any effect when the rownames are 1:nrow)
 #'
-#' @returns This function does not really return
+#' @returns This function does not really return any important information, but it should return the result of the `openxlsx::saveWorkbook` function
 #' @export
 #'
 saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F)
@@ -877,6 +879,15 @@ saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F)
   openxlsx::saveWorkbook(wb, file, overwrite = overwrite)
 }
 
+#' Exporting the suggested corrections in an excel file
+#'
+#' @param suggested data frame or list of data.frame
+#' @param file names and path of the file to export
+#' @param overwrite should the file be overwritten when it exists
+#'
+#' @returns returns the result of the saveInExcel
+#' @export
+#'
 exportXlDiagnostic<-function(suggested, file=file.path(getwd(),"rdsTaxValDiagnostic.xlsx"), overwrite=F)
 {
   if(is.data.frame(suggested))
