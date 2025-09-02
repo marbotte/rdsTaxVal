@@ -906,7 +906,7 @@ exportXlDiagnostic<-function(suggested, file=file.path(getwd(),"rdsTaxValDiagnos
     fails<-grepl("^failed",names(suggested))
     suggested<-suggested[order(main,otherSuggest,fails,decreasing=T)]
   }
-  saveInExcel(suggested, file, overwrite=overwrite, messages=messages)
+  saveInExcel(lVar=suggested, file=file, overwrite=overwrite, messages=messages)
 }
 
 
