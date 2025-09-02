@@ -20,6 +20,7 @@ require(knitr)
 You may install the `rdsTaxVal` package with the following command:
 
 ```r
+if(!require(devtools)){install.packages("devtools)}
 devtools::install_github("marbotte/rdsTaxVal")
 ```
 ## Loading the package
@@ -50,7 +51,43 @@ taxoBST_initial<-taxoBST
 taxoTDF_initial<-taxoTDF
 ```
 
-## Manage spaces in the taxonomy table
+## Full diagnostic
+
+```{r}
+suggestedBST<-fullTaxonomicDiagnostic(taxoBST)
+kable(head(suggestedBST$suggested))
+```
+
+
+```{r}
+suggestedTDF<-fullTaxonomicDiagnostic(taxoTDF)
+kable(head(suggestedTDF$suggested))
+```
+
+### Exporting the full Diagnostic in Excel
+
+```{r}
+fileDiagnosticBST<- "../suggestedBST.xlsx"
+exportXlDiagnostic(suggestedBST,fileDiagnosticBST)
+```
+
+```{r}
+fileDiagnosticTDF<-"../suggestedTDF.xlsx"
+exportXlDiagnostic(suggestedTDF,fileDiagnosticTDF)
+```
+
+Here you might want to:
+
+* check on the excel file which correction you do not want to apply (delete the rows in the sheet "suggested")
+* load back the file with the function `importXlDiagnostic`
+* use the function `correct` to apply the corrections to the R object directly
+
+
+## Going into details
+
+
+
+### Manage spaces in the taxonomy table
 
 ```{r}
 suggested_spaces_BST<-checkSpace(taxoBST)
@@ -66,7 +103,7 @@ taxoTDF<-correct(taxoTDF,suggested_spaces_TDF)
 table(taxoRanks(taxoTDF))
 ```
 
-## Manage undetermined taxa
+### Manage undetermined taxa
 
 ```{r}
 suggested_undetermined_BST<-checkUndetermited(taxoBST)
@@ -82,13 +119,13 @@ table(taxoRanks(taxoTDF))
 ```
 
 
-## Structural problems
-### Are genera always in the same family
+### Structural problems
+#### Are genera always in the same family
 
 ```{r}
 suggested_unicity_familyBST<-checkUnicityRankSup(taxoBST, rank = "genus", superior="family")
 kable(head(suggested_unicity_familyBST))
-#correctUndetermined(taxoBST,suggested_unicity_familyBST)
+##correctUndetermined(taxoBST,suggested_unicity_familyBST)
 taxoBST<-correct(taxoBST, suggested_unicity_familyBST)
 ```
 
@@ -99,7 +136,7 @@ taxoTDF<- correct(taxoTDF,suggested_unicity_familyTDF)
 table(taxoRanks(taxoTDF))
 ```
 
-### Are taxonomic codes always associated with the same information
+#### Are taxonomic codes always associated with the same information
 
 ```{r}
 suggested_taxoCodeBST <- checkUnicityCodetax(taxoBST,"takeFirst")
@@ -114,7 +151,7 @@ taxoTDF<-correct(taxoTDF, suggested_taxoCodeTDF)
 table(taxoRanks(taxoTDF))
 ```
 
-## Using the gbif backbone to get suggested corrections
+### Using the gbif backbone to get suggested corrections
 
 ```{r}
 suggested_species_gbif_BST<-checkGbif(taxoBST,rankCheck="species")
