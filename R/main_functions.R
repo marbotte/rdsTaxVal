@@ -879,7 +879,7 @@ saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F, messages=T)
   }
   if(messages)
   {
-    message("Writing sheets: ",paste(names(listVar)), "\ninto file:", normalizePath(file))
+    message("Writing sheets: ",paste(names(listVar), collapse=" "), "\ninto file:", normalizePath(file))
   }
   openxlsx::saveWorkbook(wb, file, overwrite = overwrite)
 }
@@ -924,6 +924,7 @@ importXlDiagnostic <- function(file=file.path(getwd(),"rdsTaxValDiagnostic.xlsx"
 {
   wb<-openxlsx::loadWorkbook(file)
   suggested<-lapply(names(wb),openxlsx::read.xlsx,xlsxFile=file)
+  names(suggested)<-names(wb)
   return(suggested)
 }
 # taxo<-taxoBST_initial
