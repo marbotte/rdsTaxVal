@@ -7,7 +7,8 @@
 exportXlDiagnostic(
   suggested,
   file = file.path(getwd(), "rdsTaxValDiagnostic.xlsx"),
-  overwrite = F
+  overwrite = F,
+  messages = T
 )
 }
 \arguments{
@@ -16,6 +17,8 @@ exportXlDiagnostic(
 \item{file}{names and path of the file to export}
 
 \item{overwrite}{should the file be overwritten when it exists}
+
+\item{messages}{should messages be printed}
 }
 \value{
 returns the result of the saveInExcel

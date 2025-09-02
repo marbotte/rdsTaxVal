@@ -4,7 +4,7 @@
 \alias{saveInExcel}
 \title{Export a list of table into a multi-sheet spreadsheet file}
 \usage{
-saveInExcel(file, lVar, overwrite = T, keepRownames = F)
+saveInExcel(file, lVar, overwrite = T, keepRownames = F, messages = T)
 }
 \arguments{
 \item{file}{path and name of the excel file}
@@ -14,6 +14,8 @@ saveInExcel(file, lVar, overwrite = T, keepRownames = F)
 \item{overwrite}{if the file exists, should it be overwritten?}
 
 \item{keepRownames}{Should the rownames be exported as a column (even though the argument is TRUE, it won't have any effect when the rownames are 1:nrow)}
+
+\item{messages}{should messages be written}
 }
 \value{
 This function does not really return any important information, but it should return the result of the `openxlsx::saveWorkbook` function

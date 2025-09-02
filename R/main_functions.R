@@ -858,11 +858,12 @@ suppressSuggest<-function(suggested, id_suggest, row)
 #' @param lVar either a list of table or a vector of names of tables that will be exported as sheets in the excel files
 #' @param overwrite if the file exists, should it be overwritten?
 #' @param keepRownames Should the rownames be exported as a column (even though the argument is TRUE, it won't have any effect when the rownames are 1:nrow)
+#' @param messages should messages be written
 #'
 #' @returns This function does not really return any important information, but it should return the result of the `openxlsx::saveWorkbook` function
 #' @export
 #'
-saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F)
+saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F, messages=T)
 {
   if(!is.list(lVar)){
     listVar<-mget(lVar,envir = .GlobalEnv)
@@ -876,6 +877,10 @@ saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F)
     nCols<-ifelse(hasRownames,ncol(listVar[[i]]), ncol(listVar[[i]]))
     openxlsx::setColWidths(wb, sheet =names(listVar)[i],cols = 1:nCols, widths = 'auto')
   }
+  if(messages)
+  {
+    message("Writing sheets: ",paste(names(listVar)), "\ninto file:", normalizePath(file))
+  }
   openxlsx::saveWorkbook(wb, file, overwrite = overwrite)
 }
 
@@ -884,11 +889,12 @@ saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F)
 #' @param suggested data frame or list of data.frame
 #' @param file names and path of the file to export
 #' @param overwrite should the file be overwritten when it exists
+#' @param messages should messages be printed
 #'
 #' @returns returns the result of the saveInExcel
 #' @export
 #'
-exportXlDiagnostic<-function(suggested, file=file.path(getwd(),"rdsTaxValDiagnostic.xlsx"), overwrite=F)
+exportXlDiagnostic<-function(suggested, file=file.path(getwd(),"rdsTaxValDiagnostic.xlsx"), overwrite=F, messages=T)
 {
   if(is.data.frame(suggested))
   {
@@ -900,9 +906,26 @@ exportXlDiagnostic<-function(suggested, file=file.path(getwd(),"rdsTaxValDiagnos
     fails<-grepl("^failed",names(suggested))
     suggested<-suggested[order(main,otherSuggest,fails,decreasing=T)]
   }
-  saveInExcel(suggested, file, overwrite)
+  saveInExcel(suggested, file, overwrite=overwrite, messages=messages)
 }
 
+
+
+#' Reading suggested corrections from an Excel file
+#'
+#' BE CAREFUL: DO NOT READ A FILE CREATED IN ANOTHER SESSION (other time, other computer etc), the context may change the results and the row might not correspond anymore, and the package does not check yet for discrepancies...
+#'
+#' @param file Excel file, modified or not, in which the suggested corrections are stored
+#'
+#' @returns a `suggested` object such as those created by the functions `fullTaxonomicDiagnostic`, `mergeSuggest`, `checkSpace`, `checkUndetermined`, `checkUnicityRankSup`, `checkUnicityCodetax`, or `checkGbif`, but of course it really depends whether the sheets in the files are valid, no check is yet implemented in the function
+#' @export
+#'
+importXlDiagnostic <- function(file=file.path(getwd(),"rdsTaxValDiagnostic.xlsx"))
+{
+  wb<-openxlsx::loadWorkbook(file)
+  suggested<-lapply(names(wb),openxlsx::read.xlsx,xlsxFile=file)
+  return(suggested)
+}
 # taxo<-taxoBST_initial
 # lSuggest<-c(
 #   "suggested_spaces_BST",
