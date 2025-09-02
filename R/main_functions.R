@@ -852,7 +852,7 @@ suppressSuggest<-function(suggested, id_suggest, row)
   return(suggested)
 }
 
-#' Export a list of table into a multi
+#' Export a list of table into a multi-sheet spreadsheet file
 #'
 #' @param file path and name of the excel file
 #' @param lVar either a list of table or a vector of names of tables that will be exported as sheets in the excel files
@@ -860,7 +860,7 @@ suppressSuggest<-function(suggested, id_suggest, row)
 #' @returns This function does not really return
 #' @export
 #'
-saveInExcel<-function(file,lVar)
+saveInExcel<-function(file,lVar, overwrite=T, keepRownames=F)
 {
   if(!is.list(lVar)){
     listVar<-mget(lVar,envir = .GlobalEnv)
@@ -869,14 +869,28 @@ saveInExcel<-function(file,lVar)
   for(i in 1:length(listVar))
   {
     openxlsx::addWorksheet(wb, sheetName = names(listVar)[i])
-    hasRownames <- !all(grepl("^[0-9]*$",rownames(listVar[[i]])))
+    hasRownames <- keepRownames && !all(grepl("^[0-9]*$",rownames(listVar[[i]])))
     openxlsx::writeDataTable(wb, sheet =names(listVar)[i], listVar[[i]],rowNames = hasRownames)
     nCols<-ifelse(hasRownames,ncol(listVar[[i]]), ncol(listVar[[i]]))
     openxlsx::setColWidths(wb, sheet =names(listVar)[i],cols = 1:nCols, widths = 'auto')
   }
-  openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+  openxlsx::saveWorkbook(wb, file, overwrite = overwrite)
 }
 
+exportXlDiagnostic<-function(suggested, file=file.path(getwd(),"rdsTaxValDiagnostic.xlsx"), overwrite=F)
+{
+  if(is.data.frame(suggested))
+  {
+    suggested<-list(suggested=suggested)
+  }else{
+    suggested <- suggested[sapply(suggested, is.data.frame)]
+    main<-names(suggested)=="suggested"
+    otherSuggest<-grepl("^suggested",names(suggested))
+    fails<-grepl("^failed",names(suggested))
+    suggested<-suggested[order(main,otherSuggest,fails,decreasing=T)]
+  }
+  saveInExcel(suggested, file, overwrite)
+}
 
 # taxo<-taxoBST_initial
 # lSuggest<-c(
