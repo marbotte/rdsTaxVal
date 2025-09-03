@@ -1,18 +1,18 @@
 Package: rdsTaxVal
 Type: Package
 Title: Checks and corrects taxonomy (based in the rds format for permanent plots)
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(
     person(
       "Marius", "Bottin",
-      email = "bottinmarius@gmail.com",
+      email = "mbottin@humboldt.org.co",
       role = c("aut", "cre")
     )
   )
 Description: In order to check and correct taxonomy, `rdsTaxVal` defines an S3
     extension for taxonomy data.frames based on the rds format used in 
     Instituto Humboldt (research institute for Colombian Biodiversity) for
-    permanent plots. Them, there are functions which use the new attributes of 
+    permanent plots. Then, there are functions which use the new attributes of 
     the object (mostly the names of variables of the table which corresponds
     to regular elements of a taxonomic table).
 License: GPL (>= 3)

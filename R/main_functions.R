@@ -1057,10 +1057,15 @@ replaceInMessage<-function(message,listArgs)
 #' Provide a full taxonomic diagnostic and its suggested corrections
 #'
 #' @param taxo taxonomic table (class taxo_oneTable)
-#' @param checks one or various elements to be checked, the different elements can be repeated and will be applied in the order they are entered here. Each element must be one of `"spaces"` (call `checkSPace`), `"undeterminedQualifiers"` (call `checkUndetermined`), `"unicityInSuperiorRanks"` (call `checkUnicityRankSup` for each taxonomical rank it makes sense),  `"unicityCodeTax"` (call `checkUnicityCodeTax`), `"gbif"` (call recursively `checkGbif` for each taxonomic rank which is represented in the table).
-#' @param description Description of each step in `checks`, note that word enclosed in `%%` will be replaced by the corresponfing argument in the function. This description will be used as a description in the merged suggested correction table and to write messages during the execution of the function. Note the best way to do it is to use a named character vector, with potential values of `checks` as names
-#' @param argsCheckFunction named list of parameters to pass to the individual functions (see `checks`) not that if one of the name is `checksType__arg`, it will be passed only to the function corresponding to `checkType`
-#' @param ... arguments to be passed to `mergeSuggest`
+#' @param checks one or various elements to be checked, the different elements can be repeated and will be applied in the order they are entered here. Each element must be one of:
+#'  "spaces" (call checkSpace),
+#'  "undeterminedQualifiers" (call checkUndetermined),
+#'  "unicityInSuperiorRanks" (call checkUnicityRankSup for each taxonomical rank it makes sense),
+#'  "unicityCodeTax" (call checkUnicityCodeTax),
+#'  "gbif" (call recursively checkGbif for each taxonomic rank which is represented in the table).
+#' @param description Description of each step in `checks`, note that word enclosed in percentage characters will be replaced by the corresponfing argument in the function. This description will be used as a description in the merged suggested correction table and to write messages during the execution of the function. Note the best way to do it is to use a named character vector, with potential values of `checks` as names
+#' @param argsCheckFunction named list of parameters to pass to the individual functions (see `checks`) not that if one of the name is `checksType__arg`, it will be passed only to the function corresponding to `checkType` (see `checks`)
+#' @param ... arguments to be passed to the `mergeSuggest` function
 #'
 #' @returns What is returned is the result of `mergeSuggest` for all the check functions which have been called
 #' @export
@@ -1244,3 +1249,41 @@ addHigherRanks<-function(taxo,analysedGbif,ranks=NULL,mergeOn=NA)
   taxo<-correct(taxo,suggested)
 }
 
+#' Format the taxonomical table
+#'
+#' @param taxo taxonomical table
+#' @param format "original": take the original format as an output format (works only with the "origin" attributes of taxo_oneTable objects), "listPlot": list of taxonomical tables by plots, the name of the list is the name of the plot, "oneTable" a unique table with all the plots (plots given by a variable)
+#'
+#' @returns see format
+#' @export
+#'
+formatPlots <- function(taxo, format=c("original", "listPlot", "oneTable"))
+{
+  format <- match.arg(format)
+  if(format=="original")
+  {
+    format <- attr(taxo,"origin")
+  }
+  if(!is.data.frame(taxo)&all(sapply(taxo,is.data.frame)))
+  {currentFormat<-"listPlot"}
+  if(is.data.frame(taxo))
+  {currentFormat<-"oneTable"}
+  if(currentFormat==format)
+  {
+    return(taxo)
+  }
+  if(currentFormat=="oneTable")
+  {
+    plotCol<-attr(taxo,"plot")
+    if(is.null(plotCol))
+    {
+      plotCol<-colnames(taxo)[grepl("plot",colnames(taxo),ignore.case = T)|grepl("site",colnames(taxo),ignore.case=T)]
+    }
+    if(length(plotCol)==0 || length(plotCol)>1)
+    {
+      stop("We haven't been able to select the plot column... Please use the taxo_oneTable class and the plot attribute")
+    }
+    return(lapply(by(taxo,taxo[plotCol],function(x,col)x[-which(colnames(x)==col)],col=plotCol),as.data.frame))
+  }
+  #TODO make the listPlot -> oneTable Case
+}
