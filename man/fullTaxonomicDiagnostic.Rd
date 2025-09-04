@@ -21,7 +21,7 @@ fullTaxonomicDiagnostic(
 \item{taxo}{taxonomic table (class taxo_oneTable)}
 
 \item{checks}{one or various elements to be checked, the different elements can be repeated and will be applied in the order they are entered here. Each element must be one of:
-"spaces" (call [checkSpace()]),
+"spaces" (call checkSpace),
 "undeterminedQualifiers" (call checkUndetermined),
 "unicityInSuperiorRanks" (call checkUnicityRankSup for each taxonomical rank it makes sense),
 "unicityCodeTax" (call checkUnicityCodeTax),

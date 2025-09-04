@@ -1194,6 +1194,7 @@ tabTaxoFromRank<-function(resCompleteTaxo,rank=NA)
   stopifnot(resCompleteTaxo$rank%in%taxize_rank_ref$rankname)
   allRanks<-taxize_rank_ref$rankname[taxize_rank_ref$rankname%in%resCompleteTaxo$rank]
   if(is.na(rank)){rank<-allRanks[length(allRanks)]}
+  allRanks<-allRanks[1:which(allRanks==rank)]
   #baseRank_names<-resCompleteTaxo$canonicalname[resCompleteTaxo]
   matId<-matName<-matrix(nrow=sum(resCompleteTaxo$rank==rank),ncol=length(allRanks),dimnames=list(resCompleteTaxo$gbifid[resCompleteTaxo$rank==rank],allRanks))
 
@@ -1237,16 +1238,17 @@ addHigherRanks<-function(taxo,analysedGbif,ranks=NULL,mergeOn=NA)
   tabTaxo<-tabTaxoFromRank(completeTaxo,rank=mergeOn)
   if(all(is.null(ranks)))
     {ranks<-colnames(tabTaxo$gbifid)}else
-    {ranks<-colnames(tabTaxo)[colnames(tabTaxo$gbifid) %in% ranks]}
+    {ranks<-colnames(tabTaxo$gbifid)[colnames(tabTaxo$gbifid) %in% ranks]}
   ref<-getRank(taxo,mergeOn)
   m<-match(ref,tabTaxo$names[,mergeOn])
-  suggest<-as.data.frame(tabTaxo$names[m[!is.na(m)],which(!colnames(tabTaxo$names)%in%attr(taxo,"taxonRanks")$rank)])
+  suggest<-as.data.frame(tabTaxo$names[m[!is.na(m)],ranks[which(!ranks%in%attr(taxo,"taxonRanks")$rank)]])
   colnames(suggest)<-paste("suggest",colnames(suggest),sep="_")
   suggested<-data.frame(
     row=which(!is.na(m)),
     suggest
     )
   taxo<-correct(taxo,suggested)
+  return(taxo)
 }
 
 #' Format the taxonomical table
