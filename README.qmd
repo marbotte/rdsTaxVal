@@ -20,7 +20,7 @@ require(knitr)
 You may install the `rdsTaxVal` package with the following command:
 
 ```r
-if(!require(devtools)){install.packages("devtools)}
+if(!require(devtools)){install.packages("devtools")}
 devtools::install_github("marbotte/rdsTaxVal")
 ```
 ## Loading the package
@@ -68,12 +68,12 @@ kable(head(suggestedTDF$suggested))
 
 ```{r}
 fileDiagnosticBST<- "../suggestedBST.xlsx"
-exportXlDiagnostic(suggestedBST,fileDiagnosticBST)
+exportXlDiagnostic(suggestedBST,fileDiagnosticBST,overwrite = T)
 ```
 
 ```{r}
 fileDiagnosticTDF<-"../suggestedTDF.xlsx"
-exportXlDiagnostic(suggestedTDF,fileDiagnosticTDF)
+exportXlDiagnostic(suggestedTDF,fileDiagnosticTDF,overwrite = T)
 ```
 
 Here you might want to:
@@ -81,6 +81,7 @@ Here you might want to:
 * check on the excel file which correction you do not want to apply (delete the rows in the sheet "suggested")
 * load back the file with the function `importXlDiagnostic`
 * use the function `correct` to apply the corrections to the R object directly
+
 
 
 ## Going into details
@@ -189,3 +190,100 @@ suggested_family_gbif_TDF<-checkGbif(taxoTDF,rankCheck="family")
 kable(head(suggested_family_gbif_TDF$suggested))
 taxoTDF<-correct(taxoTDF,suggested_family_gbif_TDF)
 ```
+
+
+## Other useful functions
+
+### Information at a particular rank
+
+The `getRank` function returns the name of taxa at a particular rank (NA if the lower rank with information is higher than the one queried).
+
+```{r}
+table(getRank(taxoBST, rank="family"))
+```
+
+### Lower rank for each row
+It is often useful to know the lowest rank that might apply for each register:
+
+```{r}
+taxoRanks(taxoBST)[1:100]
+```
+
+Note that no analysis is done here, which means that if there is wrong information in a column represented a rank, it will not be discarded. See the following example where we count the ranks before and after automatic corrections:
+
+```{r}
+table(taxoRanks(taxoBST_initial))
+table(taxoRanks(taxoBST))
+```
+
+
+### Extracting an epithet from a complete name
+
+
+
+The `extractEpithet` function allows us to extract an epithet:
+
+```{r}
+extractEpithet("Espeletia grandiflora")
+extractEpithet("Espeletia grandiflora var. boyacana")
+```
+
+While the latest example works well , you should prefer the form without qualifiers:
+
+```{r}
+extractEpithet("Espeletia grandiflora boyacana")
+```
+
+Used without any other argument, the function will basically extract the last word of a string, however, if you give the higher rank, it will check whether they actually correspond:
+
+```{r}
+extractEpithet("Espeletia grandiflora", higherTaxon = "Espeletia")
+extractEpithet("Magnolia grandiflora", higherTaxon = "Magnolia")
+```
+
+
+```{r}
+extractEpithet("Espeletia grandiflora", higherTaxon = "Magnolia")
+```
+
+
+Of course this function may be applied on more than one name:
+```{r}
+speciesTableFromGbif<-suggested_species_gbif_BST$analysedGbif[1:30]
+(spNames<-sapply(speciesTableFromGbif,function(x)x$canonicalname))
+(gnNames<-sapply(speciesTableFromGbif,function(x)
+  {hr<-x$higherRanks
+  return(hr$canonicalname[hr$rank=="genus"])}))
+```
+
+```{r}
+extractEpithet(spNames,gnNames)
+```
+
+
+### Getting clean taxonomy/taxonomical classification from gbif and adding higher ranks to the table
+
+If the Gbif check has been done, through the `gbifCheck` function
+
+Whenever you have done a search in Gbif, you may extract a complete list of taxa and their higher taxa, from the GBIF backbone:
+```{r}
+(tdfFamilies<-taxoTDF[taxoRanks(taxoTDF)=="family",])
+kable(tabClassifTdfFamilies<-extractCompleteTaxo(suggested_family_gbif_BST$analysedGbif))
+```
+
+Note that since the `fullTaxonomicDiagnostic` function (when applied with the checks="gbif" option) has an analysedGbif component, function `extractCompleteTaxo` may be applied on it too!
+
+Then it might be useful to extract a taxonomical table on a column-based format:
+
+```{r}
+tabTaxoFromRank(tabClassifTdfFamilies, rank = "order")
+```
+
+And finally we can merge with the register table, to obtain:
+
+```{r}
+res<-addHigherRanks(tdfFamilies,suggested_family_gbif_BST$analysedGbif,ranks = c("phylum","class","order"),mergeOn="family")
+kable(res)
+```
+
+
