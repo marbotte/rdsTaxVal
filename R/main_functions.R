@@ -839,8 +839,13 @@ checkGbif<-function(taxo,rankCheck,higherRankCheck=higherRanks(taxo,rankCheck),m
 #'
 #' @returns a new suggested correction table
 #' @export
-suppressSuggest<-function(suggested, id_suggest, row)
+suppressSuggest<-function(suggested, id_suggest=NULL, row=NULL)
 {
+  if(is.null(id_suggest) & is.null(row))
+  {
+    warning("no suppression is given")
+    return(suggested)
+  }
   if(!methods::is(suggested,"data.frame"))
   {
     if("suggested" %in% names(suggested))
@@ -851,7 +856,7 @@ suppressSuggest<-function(suggested, id_suggest, row)
       format_suggested<-"TAB"
       tabSuggested<-suggested
   }
-  tabSuggested<-tabSuggested[!tabSuggested$row %in% row & !tabSuggested$id_suggest%in%id_suggest]
+  tabSuggested<-tabSuggested[!tabSuggested$row %in% row & !tabSuggested$id_suggest%in%id_suggest,]
   if(format_suggested=="LIST"){suggested$suggested<-tabSuggested}
   if(format_suggested=="TAB"){suggested<-tabSuggested}
   return(suggested)
