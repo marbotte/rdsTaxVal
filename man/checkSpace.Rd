@@ -7,7 +7,7 @@
 checkSpace(
   taxo,
   parts = c("plot", "taxoCode", "taxonRanks", "morphoQualifiers"),
-  show_ref = c(attr(taxo, "plot"), attr(taxo, "taxoCode")),
+  show_ref = stats::na.omit(c(attr(taxo, "plot"), attr(taxo, "taxoCode"))),
   show_space = "#"
 )
 }

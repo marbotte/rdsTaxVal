@@ -235,7 +235,7 @@ correct<-function(taxo, suggested)
 #' @param show_ref TODO: document
 #' @param show_space TODO: document
 #' @export
-checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
+checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = stats::na.omit(c(attr(taxo,"plot"),attr(taxo,"taxoCode"))),show_space="#")
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
 
@@ -249,8 +249,8 @@ checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQuali
   concernedRow<-unique(c(w_space_start[,"row"],w_space_end[,"row"],w_space_multi[,"row"]))
   types<-data.frame(Reduce(rbind,list(w_space_start,w_space_end,w_space_multi)),
   type=c(rep("start",nrow(w_space_start)),rep("end",nrow(w_space_end)),rep("multi",nrow(w_space_multi))))
-  stopifnot(show_ref %in% colnames(taxo))
-  references <- taxo[concernedRow,show_ref]
+  #stopifnot(show_ref %in% colnames(taxo))
+  references <- taxo[concernedRow,show_ref,drop=F]
   colnames(references)<-paste("ref",show_ref,sep="_")
   suggested<-as.data.frame(gsub("[[:space:]]{2,}"," ",gsub("[[:space:]]+$","",gsub("^[[:space:]]+","",mat[concernedRow,concernedCol,drop=F]))))
   if(length(concernedRow))
