@@ -4,7 +4,7 @@
 \alias{suppressSuggest}
 \title{Suppress suggested corrections from a suggested correction table}
 \usage{
-suppressSuggest(suggested, id_suggest, row)
+suppressSuggest(suggested, id_suggest = NULL, row = NULL)
 }
 \arguments{
 \item{suggested}{suggested correction table (as returned by the `check*` function)}

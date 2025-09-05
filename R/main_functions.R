@@ -679,6 +679,29 @@ taxoRanks<-function(taxo)
   return(factor(LEV[lowerInfo],levels=LEV, ordered = T))
 }
 
+#' For each row of the taxonomic table, gives the taxon at the lower defined taxonomical rank
+#'
+#' @param taxo taxonomic table (of class taxo_oneTable)
+#'
+#' @returns a character vector of taxon names
+#' @export
+#'
+getLowerTax<-function(taxo)
+{
+  stopifnot(methods::is(taxo,"taxo_oneTab"))
+  res<-character(length(taxo))
+  ranks<-droplevels(taxoRanks(taxo))
+  ranksToKeep<-levels(ranks)[levels(ranks)!="higher"]
+  gotNames<-Reduce(rbind,lapply(ranksToKeep,function(rtk,tab,r)
+    {
+      wr<-which(r==rtk)
+      name=getRank(tab[wr,,drop=F],rank=rtk)
+      return(data.frame(idx=wr,name=name))
+    },tab=taxo,r=ranks))
+  res[gotNames$idx]<-gotNames$name
+  return(res)
+}
+
 #' Determine which higher ranks can be found from a taxonomic table
 #'
 #' @param taxo taxonomic table (of class taxo_oneTab)
