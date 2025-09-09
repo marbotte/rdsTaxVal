@@ -235,7 +235,7 @@ correct<-function(taxo, suggested)
 #' @param show_ref TODO: document
 #' @param show_space TODO: document
 #' @export
-checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = stats::na.omit(c(attr(taxo,"plot"),attr(taxo,"taxoCode"))),show_space="#")
+checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
 
@@ -249,7 +249,7 @@ checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQuali
   concernedRow<-unique(c(w_space_start[,"row"],w_space_end[,"row"],w_space_multi[,"row"]))
   types<-data.frame(Reduce(rbind,list(w_space_start,w_space_end,w_space_multi)),
   type=c(rep("start",nrow(w_space_start)),rep("end",nrow(w_space_end)),rep("multi",nrow(w_space_multi))))
-  #stopifnot(show_ref %in% colnames(taxo))
+  stopifnot(show_ref %in% colnames(taxo))
   references <- taxo[concernedRow,show_ref,drop=F]
   colnames(references)<-paste("ref",show_ref,sep="_")
   suggested<-as.data.frame(gsub("[[:space:]]{2,}"," ",gsub("[[:space:]]+$","",gsub("^[[:space:]]+","",mat[concernedRow,concernedCol,drop=F]))))
@@ -1193,17 +1193,35 @@ addCurrentTaxoInHigherRanks<-function(resAnGbif)
 #' extract all the unique classification table for all the taxa searched in the gbif backbone
 #'
 #' @param analysedGbif object extracted from the searches on GBIF and their analyses
+#' @param addLocalId add a local identificator column for interaction with postgres or systems which do not keep the order of the table
+#' @param addAvailableAuthorship add authorship to the table, when available in the analysed gbif object (does not work well in the case of synonyms or higher ranks)
 #'
 #' @returns A unique data.frame of classification
 #' @export
 #'
-extractCompleteTaxo<-function(analysedGbif)
+extractCompleteTaxo<-function(analysedGbif,addLocalId=F,addAvailableAuthorship=F)
 {
   res<-unique(Reduce(rbind,lapply(analysedGbif,addCurrentTaxoInHigherRanks)))
   stopifnot(!duplicated(res$gbifid))
   stopifnot(!duplicated(res$canonicalname))
+  if(addAvailableAuthorship)
+  {
+    authorships<-Reduce(rbind,lapply(analysedGbif,function(x)as.data.frame(x[c("gbifid","canonicalname","authorship")])))
+    m_auth_gb<-match(authorships$gbifid,res$gbifid)
+    m_auth_cn<-match(authorships$canonicalname,res$canonicalname)
+    stopifnot(identical(m_auth_cn,m_auth_gb))
+    res$authorship<-NA
+    res$authorship[na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
+  }
+  if(allLocalId)
+  {
+    res$localId<-1:nrow(res)
+  }
   return(res)
 }
+
+#Note we might want to use gbif_name_usage to get missing information from the analysedGbif objects
+
 
 #' Get matrices of gbif backbone ids and names from a complete gbif classification table
 #'
