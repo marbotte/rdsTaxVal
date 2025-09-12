@@ -4,10 +4,14 @@
 \alias{extractCompleteTaxo}
 \title{extract all the unique classification table for all the taxa searched in the gbif backbone}
 \usage{
-extractCompleteTaxo(analysedGbif)
+extractCompleteTaxo(analysedGbif, addLocalId = F, addAvailableAuthorship = F)
 }
 \arguments{
 \item{analysedGbif}{object extracted from the searches on GBIF and their analyses}
+
+\item{addLocalId}{add a local identificator column for interaction with postgres or systems which do not keep the order of the table}
+
+\item{addAvailableAuthorship}{add authorship to the table, when available in the analysed gbif object (does not work well in the case of synonyms or higher ranks)}
 }
 \value{
 A unique data.frame of classification

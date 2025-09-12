@@ -235,7 +235,7 @@ correct<-function(taxo, suggested)
 #' @param show_ref TODO: document
 #' @param show_space TODO: document
 #' @export
-checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
+checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = stats::na.omit(c(attr(taxo,"plot"),attr(taxo,"taxoCode"))),show_space="#")
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
 
@@ -1211,9 +1211,9 @@ extractCompleteTaxo<-function(analysedGbif,addLocalId=F,addAvailableAuthorship=F
     m_auth_cn<-match(authorships$canonicalname,res$canonicalname)
     stopifnot(identical(m_auth_cn,m_auth_gb))
     res$authorship<-NA
-    res$authorship[na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
+    res$authorship[stats::na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
   }
-  if(allLocalId)
+  if(addLocalId)
   {
     res$localId<-1:nrow(res)
   }
