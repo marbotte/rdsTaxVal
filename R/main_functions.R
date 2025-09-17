@@ -316,15 +316,19 @@ checkUndetermited <- function(taxo)
   case1 <- unique(w_spNb[,"row"])
   colCase1 <- tapply(w_spNb[,"col"], w_spNb[,"row"],function(x)x,simplify=F)
   if(any(sapply(colCase1,length)!=1)){warning("Some taxa have an identifier of type \"sp. n\" in more than one column see rows: ",paste(names(colCase1)[which(sapply(colCase1,length)!=1)],collapse=" "))}
+  if(length(case1)){
   colCase1<-sapply(colCase1,function(x)x[1])[match(as.integer(names(colCase1)),case1)]
   suggested_sp_specif[case1]<-gsub("^sp?\\.?([0-9]{1,3})\\.?$","sp\\1",mat[cbind(row=case1,col=colCase1)])
+  }
   # Case 2: we have a sp. or spp. case
   case2 <- unique(w_sp[,"row"])
   if(any(case2%in%case1)){stop("Some taxa have an identifier of type \"sp.\" or \"spp.\" and an identifier of type \"sp. n\"",paste(case2[case2%in%case1],collapse = " "))}
   colCase2<- tapply(w_sp[,"col"], w_sp[,"row"],function(x)x,simplify=F)
   if(any(sapply(colCase2,length)!=1)){warning("Some taxa have an identifier of type \"sp.\" or \"spp.\" in more than one column see rows:",paste(names(colCase2)[which(sapply(colCase2,length)!=1)],collapse=" "))}
+  if(length(case2)){
   colCase2<-sapply(colCase2,function(x)x[1])[match(as.integer(names(colCase2)),case2)]
   suggested_sp_specif[case2]<-gsub("^(spp?)\\.?$","\\1",mat[cbind(row=case2,col=colCase2)])
+  }
   # Manejo de los cf. and aff. should be possible to be true in more than one level
   cf_affMat<-rep("",length(mat))
   dim(cf_affMat)<-dim(mat)
