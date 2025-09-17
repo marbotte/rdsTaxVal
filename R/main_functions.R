@@ -1221,7 +1221,7 @@ extractCompleteTaxo<-function(analysedGbif,addLocalId=F,addAvailableAuthorship=F
     m_auth_cn<-match(authorships$canonicalname,res$canonicalname)
     stopifnot(identical(m_auth_cn,m_auth_gb))
     res$authorship<-NA
-    res$authorship[na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
+    res$authorship[stats::na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
   }
   if(allLocalId)
   {
