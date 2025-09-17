@@ -1223,7 +1223,7 @@ extractCompleteTaxo<-function(analysedGbif,addLocalId=F,addAvailableAuthorship=F
     res$authorship<-NA
     res$authorship[stats::na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
   }
-  if(allLocalId)
+  if(addLocalId)
   {
     res$localId<-1:nrow(res)
   }
