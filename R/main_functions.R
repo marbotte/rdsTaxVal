@@ -235,7 +235,7 @@ correct<-function(taxo, suggested)
 #' @param show_ref TODO: document
 #' @param show_space TODO: document
 #' @export
-checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = stats::na.omit(c(attr(taxo,"plot"),attr(taxo,"taxoCode"))),show_space="#")
+checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
 
@@ -1024,6 +1024,16 @@ mergeSuggest<-function(taxo, lSuggest, descrSuggest=NULL,parts=c("taxoCode","plo
   getSuggestColumn<-lapply(listSuggested[sapply(listSuggested,nrow)>0], function(x)colnames(x)[grep("suggest_",colnames(x))])
   colSuggest<-c(unique(unlist(getSuggestColumn[order(sapply(getSuggestColumn,length),decreasing = T)])),keepSuggestCol)
   tabSuggest<-as.data.frame(matrix(nrow=length(concernedRows),ncol=length(colSuggest),dimnames=list(concernedRows,colSuggest)))
+  # Here we should populate tabSuggest with the raw table value
+  colSuggestToPop <- gsub("^suggest_","",colSuggest)
+  colSuggestToPop <- colSuggestToPop[colSuggestToPop %in% colnames(taxo)]
+  if(length(colSuggestToPop)>0)
+  {
+    tabSuggest[cbind(row=rep(1:length(concernedRows),length(colSuggestToPop)),
+                     col=rep(match(paste0("suggest_",colSuggestToPop),colnames(tabSuggest)),each=length(concernedRows)))]<-
+    taxo[cbind(row=rep(concernedRows,length(colSuggestToPop)),
+               col=rep(match(colSuggestToPop,colnames(taxo)),each=length(concernedRows)))]
+  }
   for(i in 1:length(listSuggested))
   {
     cur<-listSuggested[[i]]
@@ -1213,7 +1223,7 @@ extractCompleteTaxo<-function(analysedGbif,addLocalId=F,addAvailableAuthorship=F
     res$authorship<-NA
     res$authorship[stats::na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
   }
-  if(addLocalId)
+  if(allLocalId)
   {
     res$localId<-1:nrow(res)
   }
