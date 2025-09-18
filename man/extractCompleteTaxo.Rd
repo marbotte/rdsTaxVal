@@ -4,7 +4,13 @@
 \alias{extractCompleteTaxo}
 \title{extract all the unique classification table for all the taxa searched in the gbif backbone}
 \usage{
-extractCompleteTaxo(analysedGbif, addLocalId = F, addAvailableAuthorship = F)
+extractCompleteTaxo(
+  analysedGbif,
+  addLocalId = F,
+  addAvailableAuthorship = F,
+  getUnavailableAuthorship = F,
+  getSynonyms = F
+)
 }
 \arguments{
 \item{analysedGbif}{object extracted from the searches on GBIF and their analyses}
@@ -12,6 +18,10 @@ extractCompleteTaxo(analysedGbif, addLocalId = F, addAvailableAuthorship = F)
 \item{addLocalId}{add a local identificator column for interaction with postgres or systems which do not keep the order of the table}
 
 \item{addAvailableAuthorship}{add authorship to the table, when available in the analysed gbif object (does not work well in the case of synonyms or higher ranks)}
+
+\item{getUnavailableAuthorship}{should the function search for unavailable authorship with taxize::gbif_name_usage}
+
+\item{getSynonyms}{should the function add synonyms in the table (note: it implies using taxize::gbif_name_usage)}
 }
 \value{
 A unique data.frame of classification

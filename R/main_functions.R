@@ -1209,11 +1209,13 @@ addCurrentTaxoInHigherRanks<-function(resAnGbif)
 #' @param analysedGbif object extracted from the searches on GBIF and their analyses
 #' @param addLocalId add a local identificator column for interaction with postgres or systems which do not keep the order of the table
 #' @param addAvailableAuthorship add authorship to the table, when available in the analysed gbif object (does not work well in the case of synonyms or higher ranks)
+#' @param getUnavailableAuthorship should the function search for unavailable authorship with taxize::gbif_name_usage
+#' @param getSynonyms should the function add synonyms in the table (note: it implies using taxize::gbif_name_usage)
 #'
 #' @returns A unique data.frame of classification
 #' @export
 #'
-extractCompleteTaxo<-function(analysedGbif,addLocalId=F,addAvailableAuthorship=F)
+extractCompleteTaxo<-function(analysedGbif, addLocalId=F, addAvailableAuthorship=F, getUnavailableAuthorship=F, getSynonyms=F)
 {
   res<-unique(Reduce(rbind,lapply(analysedGbif,addCurrentTaxoInHigherRanks)))
   stopifnot(!duplicated(res$gbifid))
@@ -1226,6 +1228,34 @@ extractCompleteTaxo<-function(analysedGbif,addLocalId=F,addAvailableAuthorship=F
     stopifnot(identical(m_auth_cn,m_auth_gb))
     res$authorship<-NA
     res$authorship[stats::na.omit(m_auth_cn)]<-authorships$authorship[!is.na(m_auth_cn)]
+  }
+  if(getUnavailableAuthorship)
+  {
+    if(!addAvailableAuthorship)
+    {stop("Please add available authorships before adding unavailable ones (argument addAvailableAuthorship)")}
+    w_missingAuthorship<-which(!is.na(res$gbifid)&is.na(res$authorship))
+    gbifid_missingAuthorship<-res$gbifid[w_missingAuthorship]
+    gbif_usage<-lapply(gbifid_missingAuthorship,function(x)taxize::gbif_name_usage(x))
+    new_authorship<-sapply(gbif_usage,function(x)x$authorship)
+    new_authorship[new_authorship==""]<-NA
+    res$authorship[w_missingAuthorship] <- new_authorship
+  }
+  if(getSynonyms)
+  {
+    res$acc_gbifid<-res$gbifid
+    tabSyno<-Reduce(rbind,lapply(analysedGbif,function(x)if(nrow(x$synonym)==0){return(NULL)}else{return(data.frame(acc_gbifid=x$gbifid,x$synonym,rank=x$finalRank))}))
+    if(nrow(tabSyno)>0)
+    {
+      taxize_usage<-lapply(tabSyno$gbifid,taxize::gbif_name_usage)
+      tabSyno$canonicalname<-sapply(taxize_usage,function(x)x$canonicalName)
+      tabSyno$authorship<-sapply(taxize_usage,function(x)x$authorship)
+      tabSyno$authorship[tabSyno$authorship==""]<-NA
+      tabSyno$parent_gbifid<-sapply(taxize_usage,function(x)x$parentKey)
+      if(any(!tabSyno$parent_gbifid %in% res$gbifid))
+      {stop("Parent gbifid of some of the synonyms are not found in the classification, we do not know yet how to manage that")}
+      stopifnot(all(colnames(res)%in%colnames(tabSyno)))
+      res<-rbind(res,tabSyno[,match(colnames(res),colnames(tabSyno))])
+    }
   }
   if(addLocalId)
   {
