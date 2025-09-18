@@ -235,7 +235,7 @@ correct<-function(taxo, suggested)
 #' @param show_ref TODO: document
 #' @param show_space TODO: document
 #' @export
-checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = c(attr(taxo,"plot"),attr(taxo,"taxoCode")),show_space="#")
+checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQualifiers"), show_ref = stats::na.omit(c(attr(taxo,"plot"),attr(taxo,"taxoCode"))),show_space="#")
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
 
