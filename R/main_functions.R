@@ -1260,8 +1260,35 @@ extractCompleteTaxo<-function(analysedGbif, addLocalId=F, addAvailableAuthorship
   if(addLocalId)
   {
     res$localId<-1:nrow(res)
+    res$parent_localId <- res$localId[match(res$parent_gbifid,res$gbifid)]
   }
   return(res)
+}
+
+addUnresolvedGbifTaxo<-function(classifTaxo,taxo)
+{
+  stopifnot(methods::is(taxo,"taxo_oneTab"))
+  #TODO: finish that
+}
+
+
+addClassifToDb <-function(classifTaxo,conn,tableTaxo=DBI::Id(schema="main",table="taxo"), tmpClassif=DBI::Id(schema="main",table="tmpclassif"))
+{
+  stopifnot(c("canonicalname","localId","parent_localId") %in% colnames(classifTaxo))
+  RPostgres::dbBegin(conn)
+  RPostgres::dbWriteTable(conn, tmpClassif, classifTaxo, overwrite=T)
+  RPostgres::dbExecute(conn, paste0("ALTER TABLE ",RPostgres::dbQuoteIdentifier(conn, tmpClassif),
+                                    " ADD COLUMN IF NOT EXISTS cd_tax_from_gbifid int,
+                                    ADD COLUMN IF NOT EXISTS cd_tax_from_name int,
+                                    ADD COLUMN IF NOT EXISTS conflict_rank boolean,
+                                    ADD COLUMN IF NOT EXISTS conflict_parent boolean,
+                                    ADD COLUMN IF NOT EXISTS conflict_accepted boolean,
+                                    ADD COLUMN IF NOT EXISTS conflict_gbifid boolean,
+                                    ADD COLUMN IF NOT EXISTS conflict_authorship boolean,
+                                    ADD COLUMN IF NOT EXISTS add_gbifid boolean,
+                                    ADD COLUMN IF NOT EXISTS add_authorship boolean;")
+  )
+  RPostgres::dbExecute(conn, paste0("UPDATE ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)))#TODO: finish that
 }
 
 #Note we might want to use gbif_name_usage to get missing information from the analysedGbif objects
@@ -1308,6 +1335,9 @@ tabTaxoFromRank<-function(resCompleteTaxo,rank=NA)
   }
   return(list(names=matName,gbifid=matId))
 }
+
+
+
 
 #' Add Higher ranks to a taxonomical table
 #'

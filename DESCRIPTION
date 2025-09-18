@@ -1,7 +1,7 @@
 Package: rdsTaxVal
 Type: Package
 Title: Checks and corrects taxonomy (based in the rds format for permanent plots)
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: c(
     person(
       "Marius", "Bottin",
@@ -19,8 +19,10 @@ License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Imports: 
+    DBI,
     methods,
     openxlsx,
+    RPostgres,
     stats,
     taxize (>= 0.10.0)
 RoxygenNote: 7.3.3
