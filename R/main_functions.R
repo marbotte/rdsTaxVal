@@ -1288,7 +1288,24 @@ addClassifToDb <-function(classifTaxo,conn,tableTaxo=DBI::Id(schema="main",table
                                     ADD COLUMN IF NOT EXISTS add_gbifid boolean,
                                     ADD COLUMN IF NOT EXISTS add_authorship boolean;")
   )
-  RPostgres::dbExecute(conn, paste0("UPDATE ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)))#TODO: finish that
+  stopifnot(RPostgres::dbGetQuery(conn,paste0("SELECT count(distinct cd_tax) nb FROM ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," LEFT JOIN ",RPostgres::dbQuoteIdentifier(conn, tableTaxo), "ON canonicalname=name_tax GROUP BY \"localId\""))$nb<=1)
+  dbGetQuery(conn,"SELECT \"localId\",t1.cd_tax, t2.cd_tax
+             FROM main.tmpclassif tc
+             LEFT JOIN main.taxo t1 USING (gbifid)
+             LEFT JOIN main.taxo t2 ON tc.canonicalname=t2.name_tax")
+  if("gbifid" %in% colnames(classifTaxo) & "gbifid" %in% dbListFields(conn, tableTaxo))
+  {
+    RPostgres::dbExecute(conn, paste0("UPDATE ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," AS tc
+                                      SET cd_tax_from_gbifid=t.cd_tax
+                                      FROM", RPostgres::dbQuoteIdentifier(conn,tableTaxo)," AS t
+                                      WHERE t.gbifid=tc.gbifid"
+                        ))#TODO: finish that
+  }
+  RPostgres::dbExecute(conn, paste0("UPDATE ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," AS tc
+                                    SET cd_tax_from_gbifid=t.cd_tax
+                                    FROM", RPostgres::dbQuoteIdentifier(conn,tableTaxo)," AS t
+                                    WHERE t.name_tax=tc.canonicalname"))
+
 }
 
 #Note we might want to use gbif_name_usage to get missing information from the analysedGbif objects
