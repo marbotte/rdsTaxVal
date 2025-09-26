@@ -1276,7 +1276,33 @@ addUnresolvedGbifTaxo<-function(classifTaxo,taxo)
 }
 
 
-addClassifToDb <-function(classifTaxo,conn,tableTaxo=DBI::Id(schema="main",table="taxo"), tmpClassif=DBI::Id(schema="main",table="tmpclassif"), defRanks = DBI::Id(schema="main",table="def_tax_rank"), onConflictRank="stop",onConflictParent="stop",onConflictAccepted="stop",onConflictGbifid="stop",onConflictAuthorship="stop")
+#' Insert taxonomic classification table into the taxonomic table of a Postgres database
+#'
+#' @param classifTaxo Taxonomic classification table, such as the one returned by extractCompleteTaxo (with arguments addLocalId=T, addAvailableAuthorship=T, getSynonyms=T)
+#' @param conn Postgres database connection (from the RPostgres package)
+#' @param tableTaxo name of the taxonomic table in the postgres database (for now, it is not very flexible, needs to have the fields: cd_tax, name_tax, authorship, cd_rank, cd_parent, cd_accepted and gbifid)
+#' @param tmpClassif name of the temporary table which would receive the data from R
+#' @param defRanks name of the taxonomic rank definition table from (with fields cd_rank, tax_rank, rank_level)
+#' @param onConflictRank What to do in case of conflict on ranks? One of "stop", "keep" or "edit". Not implemented yet.
+#' @param onConflictParent What to do in case of conflict on parent taxa? One of "stop", "keep" or "edit". Not implemented yet.
+#' @param onConflictAccepted  What to do in case of conflict on accepted taxa (accepted in the sense of synonymy)? One of "stop", "keep" or "edit". Not implemented yet.
+#' @param onConflictGbifid What to do in case of conflict on gbif identificator? One of "stop", "keep" or "edit". Not implemented yet.
+#' @param onConflictAuthorship What to do in case of conflict on authorship string? One of "stop", "keep" or "edit". Not implemented yet.
+#'
+#' @returns returns the internal temporary table which contain all information about modifications additions and correspondences (data.frame extracted from the postgres table)
+#' @export
+#'
+addClassifToDb <-function(classifTaxo
+                          , conn
+                          , tableTaxo=DBI::Id(schema="main",table="taxo")
+                          , tmpClassif=DBI::Id(schema="main",table="tmpclassif")
+                          , defRanks = DBI::Id(schema="main",table="def_tax_rank")
+                          , onConflictRank="stop"
+                          , onConflictParent="stop"
+                          , onConflictAccepted="stop"
+                          , onConflictGbifid="stop"
+                          , onConflictAuthorship="stop"
+                          )
 {
   onConflictRank<-match.arg(onConflictRank,choices=c("stop","keep","edit"))
   onConflictParent<-match.arg(onConflictParent,choices=c("stop","keep","edit"))
@@ -1301,6 +1327,7 @@ addClassifToDb <-function(classifTaxo,conn,tableTaxo=DBI::Id(schema="main",table
                                     ADD COLUMN IF NOT EXISTS cd_tax_added boolean
                                     ;")
   )
+
   stopifnot(RPostgres::dbGetQuery(conn,paste0("SELECT count(distinct cd_tax) nb FROM ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," LEFT JOIN ",RPostgres::dbQuoteIdentifier(conn, tableTaxo), "ON canonicalname=name_tax GROUP BY \"localId\""))$nb<=1)
   if("gbifid" %in% colnames(classifTaxo) & "gbifid" %in% RPostgres::dbListFields(conn, tableTaxo))
   {
@@ -1335,7 +1362,7 @@ addClassifToDb <-function(classifTaxo,conn,tableTaxo=DBI::Id(schema="main",table
     FROM ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," tc
     LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn,tmpClassif), " tcp ON tc.\"parent_localId\"=tcp.\"localId\"
     LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn,tableTaxo)," t ON COALESCE(tc.cd_tax_from_gbifid, tc.cd_tax_from_name)=t.cd_tax
-    LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn,tableTaxo)," ta ON t.cd_parent=tp.cd_tax
+    LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn,tableTaxo)," tp ON t.cd_parent=tp.cd_tax
     )
     UPDATE ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," tc
     SET conflict_parent=parentcheck.check
@@ -1384,8 +1411,148 @@ addClassifToDb <-function(classifTaxo,conn,tableTaxo=DBI::Id(schema="main",table
     gbifid = RPostgres::dbGetQuery(conn,paste0("SELECT count(*) FROM ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," WHERE conflict_gbifid"))$count,
     authorship = RPostgres::dbGetQuery(conn,paste0("SELECT count(*) FROM ",RPostgres::dbQuoteIdentifier(conn,tmpClassif)," WHERE conflict_authorship"))$count
   )
+  if(nbConflict["rank"])
+  {
+    if(onConflictRank == "stop")
+    {
+      RPostgres::dbRollback(conn)
+      stop("Some taxa were already present in the database with different taxonomic ranks")
+    }
+    warning("Some taxa were already present in the database with different taxonomic ranks, option given in such cases is:", onConflictRank)
+    if(onConflictRank == "edit")
+    {
+      stop("Option \"edit\" for onConflictRank has not been implemented yet!")
+    }
+  }
+  #TODO: ADDING OTHER CONFLICTS
 
+  # Modification to add from add_gbifid
+  RPostgres::dbExecute(conn,
+                        paste0("WITH add_gbifid AS(
+                               SELECT \"localId\", COALESCE(cd_tax_from_gbifid, cd_tax_from_name) cd_tax, gbifid
+                               FROM ",RPostgres::dbQuoteIdentifier(conn, tmpClassif),"
+                               WHERE add_gbifid
+                               ), updated AS(
+                               UPDATE ", RPostgres::dbQuoteIdentifier(conn, tableTaxo), "t
+                               SET gbifid = ag.gbifid
+                               FROM add_gbifid ag
+                               WHERE ag.cd_tax = t.cd_tax
+                               RETURNING ag.\"localId\",t.cd_tax
+                               )
+                               UPDATE ",RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                               SET final_cd_tax=u.cd_tax, cd_tax_modified = true, cd_tax_added = false
+                               FROM updated u
+                               WHERE tc.\"localId\"=u.\"localId\"
+                               "))
 
+  # Modification to add from add_authorship
+  RPostgres::dbExecute(conn,
+                       paste0("WITH add_authorship AS(
+                               SELECT \"localId\", COALESCE(cd_tax_from_gbifid, cd_tax_from_name) cd_tax, authorship
+                               FROM ",RPostgres::dbQuoteIdentifier(conn, tmpClassif),"
+                               WHERE add_authorship
+                               ), updated AS(
+                               UPDATE ", RPostgres::dbQuoteIdentifier(conn, tableTaxo), "t
+                               SET authorship = ag.authorship
+                               FROM add_authorship ag
+                               WHERE ag.cd_tax = t.cd_tax
+                               RETURNING ag.\"localId\",t.cd_tax
+                               )
+                               UPDATE ",RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                               SET final_cd_tax=u.cd_tax, cd_tax_modified = true, cd_tax_added = false
+                               FROM updated u
+                               WHERE tc.\"localId\"=u.\"localId\"
+                               "))
+
+  # Not added, not modified
+  RPostgres::dbGetQuery(conn,
+                        paste0("UPDATE ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                                SET final_cd_tax=COALESCE(cd_tax_from_gbifid, cd_tax_from_name),
+                                    cd_tax_modified=false,
+                                    cd_tax_added=false
+                                WHERE COALESCE(cd_tax_from_gbifid, cd_tax_from_name) IS NOT NULL
+                                  AND NOT conflict_rank
+                                  AND NOT conflict_parent
+                                  AND NOT conflict_accepted
+                                  AND NOT conflict_gbifid
+                                  AND NOT conflict_authorship
+                                  AND final_cd_tax IS NULL
+                                  AND cd_tax_modified IS NULL
+                                  AND cd_tax_added IS NULL
+                                RETURNING \"localId\", final_cd_tax, cd_tax_modified, cd_tax_added
+                               "))
+  # taxa to add
+  rankToAdd <- RPostgres::dbGetQuery(conn,
+                                   paste0(
+                                     "SELECT tc.\"rank\",cd_rank,count(*)
+                                     FROM ", RPostgres::dbQuoteIdentifier(conn, tmpClassif),"tc
+                                     LEFT JOIN ",RPostgres::dbQuoteIdentifier(conn, defRanks), "dtr ON tc.\"rank\"=dtr.tax_rank
+                                     WHERE COALESCE(cd_tax_from_gbifid, cd_tax_from_name) IS NULL
+                                     GROUP BY tc.\"rank\", cd_rank
+                                     ORDER BY rank_level DESC"
+                                     ))
+
+  for(i in seq(1, nrow(rankToAdd), length.out = nrow(rankToAdd)))
+  {
+    rank_tc <- RPostgres::dbQuoteString(conn,rankToAdd$rank[i])
+    cd_rank <- RPostgres::dbQuoteString(conn,rankToAdd$cd_rank[i])
+    RPostgres::dbExecute(conn, paste0("WITH current_toadd AS(
+                                          SELECT tc.\"localId\",tc.canonicalname, tc.authorship, ",cd_rank," AS cd_rank,tcp.final_cd_tax AS cd_parent, tca.final_cd_tax AS cd_accepted, tc.gbifid
+                                          FROM ",RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                                          LEFT JOIN ",RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tcp ON tc.\"parent_localId\"=tcp.\"localId\"
+                                          LEFT JOIN ",RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tca ON tc.\"acc_localId\"=tcp.\"localId\"
+                                          WHERE COALESCE(tc.cd_tax_from_gbifid, tc.cd_tax_from_name) IS NULL
+                                            AND tc.\"rank\" = ",rank_tc, "
+                                            AND tc.\"localId\" = tc.\"acc_localId\"
+                                            AND tc.final_cd_tax IS NULL
+                                          ), added AS(
+                                          INSERT INTO ",RPostgres::dbQuoteIdentifier(conn, tableTaxo),"(name_tax,authorship,cd_rank,cd_parent,cd_accepted,gbifid)
+                                            SELECT canonicalname,authorship,cd_rank,cd_parent,cd_accepted,gbifid
+                                            FROM current_toadd
+                                          RETURNING cd_tax, (SELECT \"localId\" FROM current_toadd cta WHERE cta.canonicalname=", RPostgres::dbQuoteIdentifier(conn, tableTaxo),".name_tax AND cta.cd_parent=", RPostgres::dbQuoteIdentifier(conn, tableTaxo),".cd_parent)
+                                          )
+                                        UPDATE ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                                        SET final_cd_tax=a.cd_tax, cd_tax_modified=false,cd_tax_added=true
+                                        FROM added a
+                                        WHERE a.\"localId\"=tc.\"localId\"
+                                        RETURNING tc.\"localId\",tc.final_cd_tax
+                                       "))
+    RPostgres::dbExecute(conn, paste0("WITH current_toadd AS(
+                                          SELECT tc.\"localId\",tc.canonicalname, tc.authorship, ",cd_rank," AS cd_rank,tcp.final_cd_tax AS cd_parent, tca.final_cd_tax AS cd_accepted, tc.gbifid
+                                          FROM ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                                          LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tcp ON tc.\"parent_localId\"=tcp.\"localId\"
+                                          LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tca ON tc.\"acc_localId\"=tcp.\"localId\"
+                                          WHERE COALESCE(tc.cd_tax_from_gbifid, tc.cd_tax_from_name) IS NULL
+                                            AND tc.\"rank\" = ",rank_tc, "
+                                            AND tc.\"localId\" <> tc.\"acc_localId\"
+                                            AND tc.final_cd_tax IS NULL
+                                          ), added AS(
+                                          INSERT INTO ", RPostgres::dbQuoteIdentifier(conn, tableTaxo),"(name_tax,authorship,cd_rank,cd_parent,cd_accepted,gbifid)
+                                            SELECT canonicalname,authorship,cd_rank,cd_parent,cd_accepted,gbifid
+                                            FROM current_toadd
+                                          RETURNING cd_tax, (SELECT \"localId\" FROM current_toadd cta WHERE cta.canonicalname=", RPostgres::dbQuoteIdentifier(conn, tableTaxo),".name_tax AND cta.cd_parent=", RPostgres::dbQuoteIdentifier(conn, tableTaxo),".cd_parent)
+                                          )
+                                        UPDATE ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                                        SET final_cd_tax=a.cd_tax, cd_tax_modified=false,cd_tax_added=true
+                                        FROM added a
+                                        WHERE a.\"localId\"=tc.\"localId\"
+                                        RETURNING tc.\"localId\",tc.final_cd_tax
+                                       "))
+  }
+  RPostgres::dbExecute(conn, paste0("UPDATE ", RPostgres::dbQuoteIdentifier(conn, tableTaxo),"t
+                         SET cd_accepted=cd_tax
+                         FROM ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
+                         WHERE tc.final_cd_tax=t.cd_tax AND tc.\"localId\"=tc.\"acc_localId\" AND tc.cd_tax_added"))
+  res<-RPostgres::dbReadTable(conn, RPostgres::dbQuoteIdentifier(conn, tmpClassif))
+  if(!any(is.na(res$final_cd_tax)))
+  {
+    RPostgres::dbRemoveTable(conn, RPostgres::dbQuoteIdentifier(conn, tmpClassif))
+    RPostgres::dbCommit(conn)
+  }else{
+    RPostgres::dbRollback(conn)
+    warning("Somehow, this did not work please analyse the resulting table and note that no modification was done to the database")
+  }
+  return(res)
 }
 
 #Note we might want to use gbif_name_usage to get missing information from the analysedGbif objects
