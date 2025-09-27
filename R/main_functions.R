@@ -202,7 +202,7 @@ correct<-function(taxo, suggested)
       stopifnot(!"cf_aff" %in% names(attr(taxo,"morphoQualifiers")))
       attr(taxo,"morphoQualifiers")<-c(attr(taxo,"morphoQualifiers"),cf_aff="identificationQualifier")
     }
-    if(any(colsToAdd=="verbatimTaxonRanks"))
+    if(any(colsToAdd=="verbatimTaxonRank"))
     {
       stopifnot(!"sp_specif" %in% names(attr(taxo,"morphoQualifiers")))
       attr(taxo,"morphoQualifiers")<-c(attr(taxo,"morphoQualifiers"),sp_specif="verbatimTaxonRanks")
