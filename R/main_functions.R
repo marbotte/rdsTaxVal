@@ -205,7 +205,7 @@ correct<-function(taxo, suggested)
     if(any(colsToAdd=="verbatimTaxonRank"))
     {
       stopifnot(!"sp_specif" %in% names(attr(taxo,"morphoQualifiers")))
-      attr(taxo,"morphoQualifiers")<-c(attr(taxo,"morphoQualifiers"),sp_specif="verbatimTaxonRanks")
+      attr(taxo,"morphoQualifiers")<-c(attr(taxo,"morphoQualifiers"),sp_specif="verbatimTaxonRank")
     }
     if(any(colsToAdd == "comments"))
     {
