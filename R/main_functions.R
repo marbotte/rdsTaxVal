@@ -706,6 +706,11 @@ getLowerTax<-function(taxo)
   return(res)
 }
 
+getMorphoTaxo<-function(taxo)
+{
+  stopifnot(methods::is(taxo,"taxo_oneTab"))
+}
+
 #' Determine which higher ranks can be found from a taxonomic table
 #'
 #' @param taxo taxonomic table (of class taxo_oneTab)
