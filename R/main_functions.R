@@ -121,7 +121,7 @@ extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers
       colToGet<-rbind(colToGet,data.frame(gp="taxonRanks",cn=attr(taxo,"taxonRanks")$column))
     }
   }
-  if("morphoQualifier" %in% parts)
+  if("morphoQualifiers" %in% parts)
   {
     if(!is.null(onlyQualifiers))
     {
