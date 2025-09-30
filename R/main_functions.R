@@ -126,9 +126,9 @@ extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers
     if(!is.null(onlyQualifiers))
     {
       stopifnot(onlyQualifiers %in% names(attr(taxo,"morphoQualifiers")))
-      colToGet<-rbind(colToGet,data.frame(gp="taxonRanks",cn=attr(taxo,"morphoQualifiers")[match(onlyQualifiers,names(attr(taxo,"morphoQualifiers")))]))
+      colToGet<-rbind(colToGet,data.frame(gp="morphoQualifiers",cn=attr(taxo,"morphoQualifiers")[match(onlyQualifiers,names(attr(taxo,"morphoQualifiers")))]))
     }else{
-      colToGet<-rbind(colToGet,data.frame(gp="taxonRanks",cn=attr(taxo,"morphoQualifiers")))
+      colToGet<-rbind(colToGet,data.frame(gp=rep("morphoQualifiers",length(attr(taxo,"morphoQualifiers"))),cn=attr(taxo,"morphoQualifiers")))
     }
   }
   colToGet<-colToGet[order(match(colToGet$gp,parts)),]
