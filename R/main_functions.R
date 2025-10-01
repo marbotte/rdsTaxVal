@@ -273,7 +273,7 @@ checkSpace <- function(taxo, parts=c("plot","taxoCode","taxonRanks","morphoQuali
 #'
 #' @param taxo taxonomic table (of class taxo_oneTab)
 #' @export
-checkUndetermited <- function(taxo)
+checkUndetermined <- function(taxo)
 # Note: when there are cases of Indet or Morpho, species code should be checked for relevant information
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
@@ -1133,7 +1133,7 @@ fullTaxonomicDiagnostic <- function(taxo, checks = c("spaces", "undeterminedQual
   for(i in 1:length(checks))
   {
     cur_check<-checks[i]
-    FUN_name <- c(spaces="checkSpace", undeterminedQualifiers="checkUndetermited", unicityInSuperiorRanks="checkUnicityRankSup", unicityCodeTax="checkUnicityCodetax", gbif="checkGbif")[cur_check]
+    FUN_name <- c(spaces="checkSpace", undeterminedQualifiers="checkUndetermined", unicityInSuperiorRanks="checkUnicityRankSup", unicityCodeTax="checkUnicityCodetax", gbif="checkGbif")[cur_check]
     args_names<-names(formals(FUN_name))
     args <- argsCheckFunction[names(argsCheckFunction) %in% paste(cur_check, args_names,sep="__")]
     names(args)<-gsub(paste0(cur_check,"__"),"",names(args))
