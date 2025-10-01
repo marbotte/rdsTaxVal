@@ -338,7 +338,7 @@ checkUndetermined <- function(taxo)
 
   if("cf_aff" %in% names(attr(taxo,"morphoQualifiers")))
   {
-    raw_cf_aff<-taxo[attr(taxo,"morphoQualifiers")["cf_aff"]]
+    raw_cf_aff<-taxo[,attr(taxo,"morphoQualifiers")["cf_aff"]]
     raw_cf_aff[grepl("^[[:space:]]*$",raw_cf_aff)]<-NA
     suggested_cf_aff[suggested_cf_aff==""]<-raw_cf_aff[suggested_cf_aff==""]
   }else{
@@ -347,7 +347,7 @@ checkUndetermined <- function(taxo)
 
   if("sp_specif" %in% names(attr(taxo,"morphoQualifiers")))
   {
-    raw_sp_specif<-taxo[attr(taxo,"morphoQualifiers")["sp_specif"]]
+    raw_sp_specif<-taxo[,attr(taxo,"morphoQualifiers")["sp_specif"]]
     raw_sp_specif[grepl("^[[:space:]]*$",raw_sp_specif)]<-NA
     suggested_sp_specif[suggested_sp_specif==""]<-raw_sp_specif[suggested_sp_specif==""]
   }else{
