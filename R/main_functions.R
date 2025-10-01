@@ -327,7 +327,7 @@ checkUndetermined <- function(taxo)
   if(any(sapply(colCase2,length)!=1)){warning("Some taxa have an identifier of type \"sp.\" or \"spp.\" in more than one column see rows:",paste(names(colCase2)[which(sapply(colCase2,length)!=1)],collapse=" "))}
   if(length(case2)){
   colCase2<-sapply(colCase2,function(x)x[1])[match(as.integer(names(colCase2)),case2)]
-  suggested_sp_specif[case2]<-gsub("^(spp?)\\.?$","\\1",mat[cbind(row=case2,col=colCase2)])
+  suggested_sp_specif[case2]<-gsub("^(spp?)\\.?$","\\1.",mat[cbind(row=case2,col=colCase2)])
   }
   # Manejo de los cf. and aff. should be possible to be true in more than one level
   cf_affMat<-rep("",length(mat))
@@ -706,9 +706,28 @@ getLowerTax<-function(taxo)
   return(res)
 }
 
+#' Get morpho-taxa names from a taxonomic table
+#'
+#' @param taxo
+#'
+#' @returns A character vector with the names of the morpho-taxa
+#' @export
+#'
 getMorphoTaxo<-function(taxo)
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
+  ATTR_mq <- attributes(taxo)$morphoQualifiers
+  mqTab <- extract(taxo, "morphoQualifiers")
+  nbQualifiers<-apply(mqTab, 1, function(x) sum(!is.na(x)))
+  if(any(nbQualifiers>1))
+  {stop("Some taxa have more than one qualifier (see extract(taxo, \"morphoQualifiers\")")}
+  MT <- addMorphoString <- rep(NA_character_, nrow(taxo) )
+  morphos <- nbQualifiers>0
+  rks<-taxoRanks(taxo)
+  addMorphoString[morphos] <- apply(mqTab[morphos, , drop = F], 1, stats::na.omit )
+  MT[morphos & rks != "higher"] <- paste(getLowerTax(taxo)[morphos & rks != "higher"], addMorphoString[morphos & rks != "higher"])
+  MT[morphos & rks == "higher"] <- addMorphoString[morphos & rks == "higher"]
+  return(MT)
 }
 
 #' Determine which higher ranks can be found from a taxonomic table
