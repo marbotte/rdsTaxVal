@@ -3,6 +3,7 @@
 export(addClassifToDb)
 export(addCurrentTaxoInHigherRanks)
 export(addHigherRanks)
+export(addIdentifier)
 export(analyseGbifTable)
 export(checkGbif)
 export(checkSpace)

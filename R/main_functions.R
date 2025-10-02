@@ -15,11 +15,12 @@
 #' @param morphoQualifiers named character vector, the names are the types of qualifiers, the contents are the names of the object fields. For now it only work with cf_aff and sp_specif
 #' @param comments name of the column containing the comments
 #' @param plot name of the plot (name of the permanent plot) column
+#' @param identifiers data.frame with the information of identifiers for the taxa, see function AddIdentifier
 #'
 #' @export
 #'
 
-new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRanks_names = c(family = "family", genus = "genus", species = "specificEpithet", infraspecies = "infraspecificEpithet"), taxonRanks_epithetized=c("specificEpithet", "infraspecificEpithet"), taxoCode="code", plot="plot", morphoQualifiers=c(cf_aff = "identificationQualifier", sp_specif = "verbatimTaxonRank"), comments="comments")
+new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRanks_names = c(family = "family", genus = "genus", species = "specificEpithet", infraspecies = "infraspecificEpithet"), taxonRanks_epithetized=c("specificEpithet", "infraspecificEpithet"), taxoCode="code", plot="plot", morphoQualifiers=c(cf_aff = "identificationQualifier", sp_specif = "verbatimTaxonRank"), comments="comments", identifiers=data.frame(name=character(), type=factor(levels=c("external","database","local")),nameSource=character(),field=character()))
 {
   currentFormat <- match.arg(currentFormat)
   if(currentFormat == "listPlot")
@@ -82,22 +83,55 @@ new_taxo_oneTab <- function(obj,currentFormat=c("listPlot","oneTable"), taxonRan
             taxoCode=taxoCode,
             plot=plot,
             morphoQualifiers=morphoQualifiers,
-            comments=comments)
+            comments=comments,
+            identifiers=identifiers)
   class(oneTab) <- c("taxo_oneTab","data.frame")
   return(oneTab)
 }
 
+#' Add a parameterized identifier in the taxonomic table
+#'
+#' @param taxo taxo_oneTab object, as created with new_taxo_oneTab
+#' @param field field (column name of taxo) that will be considered as an identifier for a taxon
+#' @param nameID name of the identifier (for example "gbifid")
+#' @param typeID either "external" in case of an identifier managed by an external source, "database" in case of an identifier in a local database, or a database managed by the user, or local for a local id of a taxon
+#' @param nameSource for instance the name of a database, or "Gbif Backbone" for the gbif backbone id of a taxon, may be NA.
+#'
+#' @returns the taxo object with the new identifiers as an attributes
+#' @export
+#'
+addIdentifier<-function(taxo, field, nameID, typeID=c("external","database","local"),nameSource=NA)
+{
+  stopifnot(methods::is(taxo,"taxo_oneTab"))
+  IDS<-attr(taxo,"identifiers")
+  if(field %in% IDS$field){stop("This identifier field is already in the attributes of the object")}
+  if(!field %in% names(taxo)){stop("This identifier field is not in the column name of the data.frame")}
+
+  if(nameID %in% IDS$name){stop("This identifier name is already in the attributes of the object")}
+  if(nameSource %in% IDS$nameSource){stop("This identifier nameSource is already in the attributes of the object")}
+  typeID<-match.arg(typeID)
+  attr(taxo,"identifiers")<-rbind(IDS,
+                                  data.frame(
+                                    name=nameID,
+                                    type=typeID,
+                                    nameSource=nameSource,
+                                    field=field
+                                  ))
+  return(taxo)
+}
+
+
 #' Extract information from a taxonomic table
 #'
 #' @param taxo taxonomic table (of class taxo_oneTab)
-#' @param parts parts of the taxonomic information you want to extract (from the following list: "taxonRanks","taxoCode","plot","morphoQualifiers","comments")
+#' @param parts parts of the taxonomic information you want to extract (from the following list: "taxonRanks","taxoCode","plot","morphoQualifiers","comments","identifiers")
 #' @param onlyRanks ranks (as defined in `taxize` package) to be extracted when "taxonRanks" in the `parts` if null all the ranks are extracted
 #' @param onlyQualifiers qualifiers (cf_aff and/or sp_specif) to be extracted when "taxonRanks" in the `parts` if null all the ranks are extracted
 #' @export
-extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers","comments"),onlyRanks=NULL,onlyQualifiers=NULL)
+extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers","comments", "identifiers"),onlyRanks=NULL,onlyQualifiers=NULL)
 {
   stopifnot(methods::is(taxo,"taxo_oneTab"))
-  parts=match.arg(parts,choices=c("plot","taxoCode","taxonRanks","morphoQualifiers","comments"),several.ok = T)
+  parts=match.arg(parts,choices=c("plot","taxoCode","taxonRanks","morphoQualifiers","comments","identifiers"),several.ok = T)
   colToGet<-data.frame(gp=character(),cn=character())
   if("plot" %in% parts)
   {
@@ -130,6 +164,10 @@ extract <-function(taxo,parts=c("taxonRanks","taxoCode","plot","morphoQualifiers
     }else{
       colToGet<-rbind(colToGet,data.frame(gp=rep("morphoQualifiers",length(attr(taxo,"morphoQualifiers"))),cn=attr(taxo,"morphoQualifiers")))
     }
+  }
+  if("identifiers" %in% parts)
+  {
+    colToGet<-rbind(colToGet, data.frame(gp=rep("identifiers",nrow(attr(taxo,"identifiers")),cn=attr(taxo,"identifiers")$field)))
   }
   colToGet<-colToGet[order(match(colToGet$gp,parts)),]
   colToGet<-stats::na.omit(colToGet)
@@ -708,7 +746,7 @@ getLowerTax<-function(taxo)
 
 #' Get morpho-taxa names from a taxonomic table
 #'
-#' @param taxo
+#' @param taxo taxo_oneTab: parameterized taxonomic table
 #'
 #' @returns A character vector with the names of the morpho-taxa
 #' @export
@@ -1578,6 +1616,25 @@ addClassifToDb <-function(classifTaxo
   }
   return(res)
 }
+
+addMorphoTaxToDb <- function(taxo
+                          , conn
+                          , tableTaxo=DBI::Id(schema="main",table="taxo")
+                          , tmpMorpho=DBI::Id(schema="main",table="tmpmorphotax")
+                          , defRanks = DBI::Id(schema="main",table="def_tax_rank")
+                          , onConflictRank="stop"
+                          , onConflictParent="stop"
+                          , onConflictAccepted="stop"
+                          , onConflictGbifid="stop"
+                          , onConflictAuthorship="stop"
+                          )
+{
+  NA
+}
+
+
+
+
 
 #Note we might want to use gbif_name_usage to get missing information from the analysedGbif objects
 

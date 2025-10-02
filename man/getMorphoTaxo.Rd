@@ -7,7 +7,7 @@
 getMorphoTaxo(taxo)
 }
 \arguments{
-\item{taxo}{}
+\item{taxo}{taxo_oneTab: parameterized taxonomic table}
 }
 \value{
 A character vector with the names of the morpho-taxa

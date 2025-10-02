@@ -14,7 +14,9 @@ new_taxo_oneTab(
   plot = "plot",
   morphoQualifiers = c(cf_aff = "identificationQualifier", sp_specif =
     "verbatimTaxonRank"),
-  comments = "comments"
+  comments = "comments",
+  identifiers = data.frame(name = character(), type = factor(levels = c("external",
+    "database", "local")), nameSource = character(), field = character())
 )
 }
 \arguments{
@@ -35,6 +37,8 @@ plots and "oneTable" for a single data.frame containing all the taxonomy}
 \item{morphoQualifiers}{named character vector, the names are the types of qualifiers, the contents are the names of the object fields. For now it only work with cf_aff and sp_specif}
 
 \item{comments}{name of the column containing the comments}
+
+\item{identifiers}{data.frame with the information of identifiers for the taxa, see function AddIdentifier}
 }
 \description{
 Technically this creates an object with a new class inherited from data.frame

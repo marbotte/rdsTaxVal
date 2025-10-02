@@ -6,7 +6,8 @@
 \usage{
 extract(
   taxo,
-  parts = c("taxonRanks", "taxoCode", "plot", "morphoQualifiers", "comments"),
+  parts = c("taxonRanks", "taxoCode", "plot", "morphoQualifiers", "comments",
+    "identifiers"),
   onlyRanks = NULL,
   onlyQualifiers = NULL
 )
@@ -14,7 +15,7 @@ extract(
 \arguments{
 \item{taxo}{taxonomic table (of class taxo_oneTab)}
 
-\item{parts}{parts of the taxonomic information you want to extract (from the following list: "taxonRanks","taxoCode","plot","morphoQualifiers","comments")}
+\item{parts}{parts of the taxonomic information you want to extract (from the following list: "taxonRanks","taxoCode","plot","morphoQualifiers","comments","identifiers")}
 
 \item{onlyRanks}{ranks (as defined in `taxize` package) to be extracted when "taxonRanks" in the `parts` if null all the ranks are extracted}
 
