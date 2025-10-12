@@ -1583,7 +1583,7 @@ addClassifToDb <-function(classifTaxo
                                           SELECT tc.\"localId\",tc.canonicalname, tc.authorship, ",cd_rank," AS cd_rank,tcp.final_cd_tax AS cd_parent, tca.final_cd_tax AS cd_accepted, tc.gbifid
                                           FROM ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tc
                                           LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tcp ON tc.\"parent_localId\"=tcp.\"localId\"
-                                          LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tca ON tc.\"acc_localId\"=tcp.\"localId\"
+                                          LEFT JOIN ", RPostgres::dbQuoteIdentifier(conn, tmpClassif)," tca ON tc.\"acc_localId\"=tca.\"localId\"
                                           WHERE COALESCE(tc.cd_tax_from_gbifid, tc.cd_tax_from_name) IS NULL
                                             AND tc.\"rank\" = ",rank_tc, "
                                             AND tc.\"localId\" <> tc.\"acc_localId\"
